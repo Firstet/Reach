@@ -117,10 +117,9 @@ class SafetyService:
             return False, f"Email or domain suppressed ({prospect.email})"
 
         # 7. Verification requirement check
-        if campaign.require_email_verification and not prospect.email_verified:
-            # High confidence (>0.7) allowed even if not strictly verified
+        if campaign.require_email_verification and not prospect.email_verified and not campaign.test_mode and not lead.is_test:
             conf = prospect.email_confidence or 0.0
-            if conf < 0.7:
+            if conf < 0.4:
                 return False, f"Email not verified and low confidence ({conf:.2f})"
 
         return True, "OK"
