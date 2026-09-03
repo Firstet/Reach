@@ -132,6 +132,43 @@ async def get_daily_outreach_logs(
     return {"dates": sorted_dates}
 
 
+@router.get("/lead/{lead_id}")
+async def get_lead_messages(
+    lead_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch all sent and draft messages generated for a specific lead."""
+    from app.models import Company, Prospect
+    stmt = (
+        select(Message)
+        .where(Message.lead_id == lead_id)
+        .options(
+            selectinload(Message.lead).selectinload(Lead.prospect).selectinload(Prospect.company)
+        )
+        .order_by(Message.created_at.desc())
+    )
+    res = await db.execute(stmt)
+    messages = res.scalars().all()
+    return {
+        "lead_id": str(lead_id),
+        "messages": [
+            {
+                "id": str(m.id),
+                "direction": m.direction,
+                "status": m.status,
+                "subject": m.subject or "Strategic Outreach",
+                "body": m.body,
+                "from_email": m.from_email,
+                "to_email": m.to_email,
+                "sent_at": (m.sent_at or m.created_at).isoformat() if (m.sent_at or m.created_at) else None,
+                "is_auto_generated": m.is_auto_generated,
+            }
+            for m in messages
+        ],
+    }
+
+
 @router.get("")
 async def list_conversations(
     page: int = Query(1, ge=1),

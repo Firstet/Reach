@@ -186,7 +186,10 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
+
     fetchStats();
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const totalLeads = Object.values(stats.pipeline).reduce((a, b) => a + b, 0);

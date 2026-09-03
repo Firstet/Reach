@@ -75,7 +75,7 @@ function ConversationsInner() {
   const [dailyLogs, setDailyLogs] = useState<any[]>([]);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "escalated" | "daily_logs">(showEscalated ? "escalated" : "all");
+  const [filter, setFilter] = useState<"all" | "escalated" | "daily_logs">(showEscalated ? "escalated" : "daily_logs");
 
   // Selected Thread detail state
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
@@ -88,14 +88,19 @@ function ConversationsInner() {
   const load = async () => {
     setLoading(true);
     try {
-      if (filter === "daily_logs") {
-        const logsData = await apiFetch("/api/v1/conversations/daily-outreach-logs");
-        setDailyLogs(logsData.dates || []);
-        // Auto expand first date
-        if (logsData.dates?.length > 0) {
-          setExpandedDates((prev) => ({ ...prev, [logsData.dates[0].date]: true }));
-        }
-      } else {
+      // Always fetch daily outreach logs
+      const logsData = await apiFetch("/api/v1/conversations/daily-outreach-logs");
+      const dates = logsData.dates || [];
+      setDailyLogs(dates);
+
+      // Auto expand all dates so sent messages are immediately visible
+      const expanded: Record<string, boolean> = {};
+      for (const d of dates) {
+        expanded[d.date] = true;
+      }
+      setExpandedDates(expanded);
+
+      if (filter !== "daily_logs") {
         const q = filter === "escalated" ? "?escalated_only=true" : "?page_size=50";
         const data = await apiFetch(`/api/v1/conversations${q}`);
         setConversations(data.items || []);

@@ -11,6 +11,7 @@ import {
   Mail,
   RefreshCw,
   Search,
+  Send,
   Sparkles,
   UserCheck,
   UserRound,
@@ -78,22 +79,43 @@ export default function LeadsPage() {
   const [scrapingMaxResults, setScrapingMaxResults] = useState(10);
   const [scraping, setScraping] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [leadMessages, setLeadMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
-  const loadLeads = async () => {
-    setLoading(true);
+  const loadLeads = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await apiFetch("/api/v1/leads?page_size=100");
       setLeads(data.items || []);
     } catch {
       /* not connected */
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadLeads();
+    loadLeads(true);
+    // Auto refresh every 10 seconds to update scraped leads count dynamically
+    const interval = setInterval(() => {
+      loadLeads(false);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (selectedLead) {
+      setLoadingMessages(true);
+      apiFetch(`/api/v1/conversations/lead/${selectedLead.id}`)
+        .then((data) => {
+          setLeadMessages(data.messages || []);
+        })
+        .catch(() => setLeadMessages([]))
+        .finally(() => setLoadingMessages(false));
+    } else {
+      setLeadMessages([]);
+    }
+  }, [selectedLead]);
 
   const handleTestScraping = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,7 +287,7 @@ export default function LeadsPage() {
         ))}
 
         <button
-          onClick={loadLeads}
+          onClick={() => loadLeads(true)}
           style={{
             marginLeft: "auto",
             background: "transparent",
@@ -565,24 +587,52 @@ export default function LeadsPage() {
             {/* Sent Outreach Messages & AI Personalization Section */}
             <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
               <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#c9a84c", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>📤</span> Sent Outreach & AI Personalization Intelligence
+                <Send size={16} /> Sent Outreach & AI Personalization Intelligence ({leadMessages.length} Messages)
               </h3>
 
-              <div style={{ background: "var(--bg-secondary, #12121c)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
-                  Subject Line:
+              {loadingMessages ? (
+                <div style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+                  Fetching sent outreach records...
                 </div>
-                <div style={{ fontSize: "13px", fontWeight: "700", color: "#ffffff", marginBottom: "12px" }}>
-                  Strategic Communications & Brand Positioning for {selectedLead.prospect?.company_name || "your organization"}
-                </div>
+              ) : leadMessages.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {leadMessages.map((msg: any) => (
+                    <div key={msg.id} style={{ background: "var(--bg-secondary, #12121c)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--rayven-accent)", textTransform: "uppercase" }}>
+                          {msg.direction.toUpperCase()} ({msg.status.toUpperCase()})
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {msg.sent_at ? new Date(msg.sent_at).toLocaleString() : "Recently Dispatched"}
+                        </div>
+                      </div>
 
-                <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
-                  Outreach Body:
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "2px" }}>
+                        Subject Line:
+                      </div>
+                      <div style={{ fontSize: "13px", fontWeight: "700", color: "#ffffff", marginBottom: "10px" }}>
+                        {msg.subject}
+                      </div>
+
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
+                        Outreach Email Body:
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#e2e8f0", lineHeight: "1.6", whiteSpace: "pre-wrap", background: "rgba(0,0,0,0.25)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                        {msg.body}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ fontSize: "13px", color: "#e2e8f0", lineHeight: "1.6", whiteSpace: "pre-wrap", background: "rgba(0,0,0,0.2)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                  {`Dear ${selectedLead.prospect?.first_name || "Executive"},\n\nI noticed ${selectedLead.prospect?.company_name || "your company"}'s recent market expansion. At Rayven Strategic Communications, we help leaders engineer narrative architecture and strategic PR to turn brand perception into high-trust client relationships.\n\nWould you be open to a brief 10-minute strategic exchange this week?\n\nWarm regards,\nRayven Strategic Communications Team`}
+              ) : (
+                <div style={{ background: "var(--bg-secondary, #12121c)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
+                    Status: Draft Pending Dispatch
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#e2e8f0", lineHeight: "1.6", whiteSpace: "pre-wrap", background: "rgba(0,0,0,0.2)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                    {`Dear ${selectedLead.prospect?.first_name || "Executive"},\n\nAt Rayven Strategic Communications, we help leaders engineer narrative architecture and strategic PR to turn brand perception into high-trust client relationships.\n\nWould you be open to a brief strategic exchange this week?\n\nWarm regards,\nRayven Strategic Communications Team`}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
