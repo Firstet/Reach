@@ -26,15 +26,14 @@ async def lifespan(app: FastAPI):
     """Application lifecycle: startup → yield → shutdown."""
     logger.info("Starting Reach API...")
 
-    # Create all tables (in development; use Alembic in production)
-    if settings.is_development:
-        from app.core.database import Base
-        import app.models.models  # noqa: F401 — register all models
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables created/verified.")
+    # Always ensure database tables exist
+    from app.core.database import Base
+    import app.models.models  # noqa: F401 — register all models
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables verified.")
 
-    # Ensure admin user exists
+    # Ensure admin user exists and password is in sync with config
     await _ensure_admin()
 
     yield
@@ -45,7 +44,7 @@ async def lifespan(app: FastAPI):
 
 
 async def _ensure_admin():
-    """Create the initial admin user if it doesn't exist."""
+    """Create or sync the initial admin user with configured credentials."""
     from sqlalchemy import select
     from app.models import User, UserRole
 
@@ -53,7 +52,8 @@ async def _ensure_admin():
         result = await db.execute(
             select(User).where(User.email == settings.admin_email)
         )
-        if not result.scalar_one_or_none():
+        admin = result.scalar_one_or_none()
+        if not admin:
             admin = User(
                 id=uuid.uuid4(),
                 email=settings.admin_email,
@@ -63,8 +63,13 @@ async def _ensure_admin():
                 is_active=True,
             )
             db.add(admin)
-            await db.commit()
             logger.info(f"Admin user created: {settings.admin_email}")
+        else:
+            admin.hashed_password = hash_password(settings.admin_password)
+            admin.is_active = True
+            admin.login_attempts = 0
+            logger.info(f"Admin user credentials synced: {settings.admin_email}")
+        await db.commit()
 
 
 def create_app() -> FastAPI:

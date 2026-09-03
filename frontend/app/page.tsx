@@ -8,7 +8,7 @@ export default function RavenLandingPage() {
   const router = useRouter();
   const customization = useCustomization();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("admin@rayvensc.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,39 +34,47 @@ export default function RavenLandingPage() {
     setLoading(true);
     setError("");
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL;
+    const loginEndpoints = apiBase
+      ? [apiBase.startsWith("http") ? `${apiBase}/api/v1/auth/login` : apiBase, "/api/v1/auth/login"]
+      : ["/api/v1/auth/login", "http://localhost:8000/api/v1/auth/login"];
 
-    try {
-      let res = await fetch(`${apiBase}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    let res: Response | null = null;
+    let lastError: any = null;
 
-      if (!res.ok) {
-        res = await fetch("/api/v1/auth/login", {
+    for (const endpoint of loginEndpoints) {
+      try {
+        res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
+        if (res.ok || res.status === 401 || res.status === 403 || res.status === 422) {
+          break; // Connected to backend
+        }
+      } catch (err) {
+        lastError = err;
       }
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.detail || "Invalid email or password");
-        setLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      router.push("/dashboard");
-    } catch {
-      setError("Unable to connect to server. Please try again.");
-      setLoading(false);
     }
+
+    if (!res) {
+      setError("Unable to connect to server backend. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.detail || "Invalid email or password");
+      setLoading(false);
+      return;
+    }
+
+    const data = await res.json();
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("refresh_token", data.refresh_token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    router.push("/dashboard");
   };
 
   return (
