@@ -263,6 +263,20 @@ async def human_reply(
     email_provider = get_email_provider()
     from_email = (email_provider.sender_email if hasattr(email_provider, 'sender_email') else None) or "hello@rayvensc.com"
 
+    from app.core.config import get_settings
+    settings = get_settings()
+
+    sig_text = settings.email_signature_text or "\n---\nWarm regards,\nRayven Strategic Communications\nAbuja, Nigeria | hello@rayvensc.com"
+    sig_html = settings.email_signature_html or "<br><br><hr><p><strong>Warm regards,</strong><br>Rayven Strategic Communications<br>Abuja, Nigeria | hello@rayvensc.com</p>"
+
+    reply_body_text = body.body
+    if sig_text and sig_text not in reply_body_text:
+        reply_body_text = f"{reply_body_text}\n\n{sig_text}"
+
+    reply_body_html = f"<p>{body.body.replace(chr(10), '<br>')}</p>"
+    if sig_html and sig_html not in reply_body_html:
+        reply_body_html = f"{reply_body_html}<br>{sig_html}"
+
     msg = Message(
         id=uuid.uuid4(),
         lead_id=conv.lead_id,
@@ -270,7 +284,7 @@ async def human_reply(
         direction=MessageDirection.OUTBOUND,
         status=MessageStatus.DRAFT,
         subject=body.subject or conv.subject or "Re: Strategic Communications",
-        body=body.body,
+        body=reply_body_text,
         from_email=from_email,
         to_email=prospect_email or "prospect@target.com",
         is_auto_generated=False,
@@ -282,8 +296,8 @@ async def human_reply(
                 to_email=prospect_email,
                 from_email=from_email,
                 subject=msg.subject or conv.subject or "Re: Strategic Communications",
-                body_text=msg.body,
-                body_html=f"<p>{msg.body.replace(chr(10), '<br>')}</p>",
+                body_text=reply_body_text,
+                body_html=reply_body_html,
             )
             res = await email_provider.send(outbound)
             if res.success:

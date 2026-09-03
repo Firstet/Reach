@@ -92,12 +92,27 @@ class OutreachService:
         from_email = (email_provider.sender_email if hasattr(email_provider, 'sender_email') else None) or "outreach@rayvensc.com"
         unsubscribe_url = f"{campaign.description or ''}/api/v1/suppression/unsubscribe?p={prospect.id}"
 
+        # Append configured Email Signature
+        from app.core.config import get_settings
+        settings = get_settings()
+
+        sig_text = settings.email_signature_text or "\n---\nWarm regards,\nRayven Strategic Communications\nAbuja, Nigeria | hello@rayvensc.com"
+        sig_html = settings.email_signature_html or "<br><br><hr><p><strong>Warm regards,</strong><br>Rayven Strategic Communications<br>Abuja, Nigeria | hello@rayvensc.com</p>"
+
+        final_text = msg.body
+        if sig_text and sig_text not in final_text:
+            final_text = f"{final_text}\n\n{sig_text}"
+
+        final_html = f"<p>{msg.body.replace(chr(10), '<br>')}</p>"
+        if sig_html and sig_html not in final_html:
+            final_html = f"{final_html}<br>{sig_html}"
+
         outbound = OutboundMessage(
             to_email=prospect.email,
             from_email=from_email,
             subject=msg.subject or f"Strategic Communications — {prospect.company.name if prospect.company else ''}",
-            body_text=msg.body,
-            body_html=f"<p>{msg.body.replace(chr(10), '<br>')}</p>",
+            body_text=final_text,
+            body_html=final_html,
             unsubscribe_url=unsubscribe_url,
         )
 

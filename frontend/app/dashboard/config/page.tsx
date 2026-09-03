@@ -90,13 +90,25 @@ const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret
     { key: "model", label: "Local Model", hint: "llama3.1" },
   ],
   smtp: [
-    { key: "smtp_host", label: "SMTP Server Host", hint: "smtp.gmail.com or smtp.mailgun.org" },
+    { key: "smtp_host", label: "SMTP Server Host", hint: "smtp.gmail.com or imap/smtp server" },
     { key: "smtp_port", label: "SMTP Server Port", hint: "587 (TLS) or 465 (SSL)" },
-    { key: "smtp_username", label: "SMTP Username / Email", secret: false, hint: "outreach@rayvensc.com" },
+    { key: "smtp_username", label: "SMTP Username / Email", secret: false, hint: "contact@rayvensc.com" },
     { key: "smtp_password", label: "SMTP Password / App Password", secret: true },
     { key: "sender_name", label: "Sender Display Name", hint: "Rayven Strategic Communications" },
     { key: "sender_email", label: "From / Reply-To Email", hint: "contact@rayvensc.com" },
     { key: "use_tls", label: "Enable STARTTLS", hint: "true" },
+    {
+      key: "email_signature_text",
+      label: "Plain Text Email Signature",
+      textarea: true,
+      hint: "---\nWarm regards,\nRayven Strategic Communications\nAbuja, Nigeria | hello@rayvensc.com",
+    },
+    {
+      key: "email_signature_html",
+      label: "HTML Formatted Email Signature",
+      textarea: true,
+      hint: "<br><hr><p><strong>Warm regards,</strong><br>Rayven Strategic Communications<br>Abuja, Nigeria | hello@rayvensc.com</p>",
+    },
   ],
   gmail: [
     { key: "client_id", label: "OAuth Client ID", secret: true },

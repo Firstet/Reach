@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_use_tls: bool = True
     smtp_sender_email: str = ""
+    email_signature_text: str = ""
+    email_signature_html: str = ""
 
     # ── Search Provider ───────────────────────────────────────────────────────
     active_search_provider: Literal["serper", "serpapi", "brave", "none"] = "none"

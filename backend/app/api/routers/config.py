@@ -119,6 +119,10 @@ async def get_config(
                     settings.smtp_username = cfg["smtp_username"]
                 if secrets.get("smtp_password"):
                     settings.smtp_password = secrets["smtp_password"]
+                if cfg.get("email_signature_text"):
+                    settings.email_signature_text = cfg["email_signature_text"]
+                if cfg.get("email_signature_html"):
+                    settings.email_signature_html = cfg["email_signature_html"]
 
     has_custom_llm_key = bool(
         settings.openai_api_key

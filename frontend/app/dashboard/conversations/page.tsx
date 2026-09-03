@@ -845,6 +845,17 @@ function ConversationsInner() {
                 />
               </div>
 
+              {/* Active Signature Badge */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed var(--border)", borderRadius: "8px", padding: "10px 14px", marginBottom: "16px", fontSize: "11px", color: "var(--text-muted)" }}>
+                <span style={{ fontWeight: "800", color: "#c9a84c" }}>✍️ Auto-Appended Email Signature:</span>
+                <div style={{ marginTop: "4px", color: "#94a3b8", fontStyle: "italic" }}>
+                  ---<br />
+                  Warm regards,<br />
+                  <strong>Rayven Strategic Communications</strong><br />
+                  Abuja, Nigeria | hello@rayvensc.com
+                </div>
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
                 <button
                   onClick={() => {
