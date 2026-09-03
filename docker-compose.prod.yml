@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-reach}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reach_password}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-127.0.0.1:5432}:5432"
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -23,7 +23,7 @@ services:
     container_name: reach_redis_prod
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-127.0.0.1:6379}:6379"
     volumes:
       - redis_prod_data:/data
     healthcheck:
