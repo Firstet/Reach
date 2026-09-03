@@ -307,6 +307,8 @@ class Campaign(Base, TimestampMixin):
     approval_mode: Mapped[str] = mapped_column(String(20), default="auto", nullable=False)  # auto | manual
     min_score_threshold: Mapped[float] = mapped_column(Float, default=40.0, nullable=False)
     discovery_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+    auto_scrape_frequency: Mapped[str] = mapped_column(String(50), default="twice_weekly", nullable=False)  # twice_weekly | weekly | daily | manual
+    last_auto_scrape_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     scoring_weights: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     tracking_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     require_email_verification: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

@@ -146,12 +146,29 @@ export default function LeadsPage() {
     <div style={{ padding: "32px", maxWidth: "1350px", margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.02em", marginBottom: "6px" }}>
-          Lead Discovery & Business Development Pipeline
-        </h1>
-        <p style={{ fontSize: "13px", color: "var(--text-secondary, #9494a8)", lineHeight: "1.5" }}>
-          Automated web discovery, company decision-maker scraping, email verification, and client progress monitoring.
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+          <div>
+            <h1 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.02em", marginBottom: "6px" }}>
+              Lead Repository Storage Vault & Auto-Discovery Pipeline
+            </h1>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary, #9494a8)", lineHeight: "1.5" }}>
+              Central database repository storing all scraped executive prospects, email verifications, and outreach sequences.
+            </p>
+          </div>
+
+          {/* Automatic Scraping Schedule Status Badge */}
+          <div style={{ background: "rgba(201,168,76,0.12)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "12px", padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <Sparkles size={16} style={{ color: "var(--rayven-accent)" }} />
+            <div>
+              <div style={{ fontSize: "10px", fontWeight: "800", color: "var(--rayven-accent)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Automatic Web Scraping Schedule
+              </div>
+              <div style={{ fontSize: "12px", fontWeight: "700", color: "#ffffff" }}>
+                ⚡ ACTIVE — Twice Weekly (Every 3-4 Days)
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Live Scraping & Web Extraction Tester Bar */}

@@ -22,16 +22,44 @@ settings = get_settings()
 
 
 async def _background_automation_loop():
-    """Fail-safe background loop executing sequence orchestration & reply processing every 30 seconds."""
+    """Fail-safe background loop executing sequence orchestration, reply processing, and periodic auto-scraping."""
     import asyncio
+    from datetime import UTC, datetime, timedelta
+    from sqlalchemy import select
+    from app.models import Campaign, CampaignStatus
+
     while True:
         try:
             await asyncio.sleep(30)
             async with AsyncSessionLocal() as db:
                 from app.agents.sequence_agent import run_sequence_agent_tick
                 from app.agents.reply_agent import run_reply_agent
+                from app.agents.discovery_agent import run_discovery_agent
+
                 await run_sequence_agent_tick(db)
                 await run_reply_agent(db, since_hours=24)
+
+                # Automatic Periodic Lead Scraping Engine
+                now_utc = datetime.now(UTC)
+                camp_stmt = select(Campaign).where(Campaign.status == CampaignStatus.ACTIVE)
+                c_res = await db.execute(camp_stmt)
+                active_campaigns = c_res.scalars().all()
+
+                for camp in active_campaigns:
+                    freq = getattr(camp, 'auto_scrape_frequency', 'twice_weekly') or 'twice_weekly'
+                    if freq == 'manual':
+                        continue
+
+                    # Intervals: twice_weekly = 3.5 days (84 hours); weekly = 7 days (168 hours); daily = 24 hours
+                    interval_hours = 84 if freq == 'twice_weekly' else (168 if freq == 'weekly' else 24)
+                    last_scrape = getattr(camp, 'last_auto_scrape_at', None)
+
+                    if not last_scrape or (now_utc - last_scrape) >= timedelta(hours=interval_hours):
+                        logger.info(f"Triggering scheduled automatic web lead scraping for campaign '{camp.name}' ({freq})...")
+                        await run_discovery_agent(db, camp.id)
+                        camp.last_auto_scrape_at = now_utc
+                        await db.commit()
+
         except asyncio.CancelledError:
             break
         except Exception as e:
