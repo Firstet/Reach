@@ -672,16 +672,27 @@ class ProspectResearch(Base, TimestampMixin):
 
 
 class EmailTemplate(Base, TimestampMixin):
-    """Reusable email template library."""
+    """Reusable strategic outreach email framework template library."""
     __tablename__ = "email_templates"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    category: Mapped[str] = mapped_column(String(100), default="outreach", nullable=False)
+    category: Mapped[str] = mapped_column(String(100), default="Initial Outreach", nullable=False)
+    purpose: Mapped[str | None] = mapped_column(Text, nullable=True)
+    when_to_use: Mapped[str | None] = mapped_column(Text, nullable=True)
+    when_not_to_use: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recommended_lead_types: Mapped[str | None] = mapped_column(Text, nullable=True)
     subject_template: Mapped[str] = mapped_column(String(1000), nullable=False)
     body_template: Mapped[str] = mapped_column(Text, nullable=False)
+    rules: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tone: Mapped[str | None] = mapped_column(String(100), default="Consultative & Direct", nullable=True)
+    max_length: Mapped[str | None] = mapped_column(String(50), default="150 words", nullable=True)
+    cta_style: Mapped[str | None] = mapped_column(String(100), default="Low-pressure conversational", nullable=True)
+    follow_up_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     variables: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    rayven_capabilities: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

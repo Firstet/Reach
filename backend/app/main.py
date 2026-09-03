@@ -36,6 +36,11 @@ async def lifespan(app: FastAPI):
     # Ensure admin user exists and password is in sync with config
     await _ensure_admin()
 
+    # Pre-populate all 15 Strategic RayvenSC Email Templates
+    from app.db.seed_templates import seed_email_templates
+    async with AsyncSessionLocal() as db:
+        await seed_email_templates(db)
+
     yield
 
     # Cleanup
