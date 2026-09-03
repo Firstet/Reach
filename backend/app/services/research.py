@@ -50,7 +50,15 @@ class ResearchService:
         search: SearchProvider | None = None,
     ) -> ProspectResearch:
         """Conduct research on a lead and save/update ProspectResearch."""
-        lead = await self._db.get(Lead, lead_id)
+        from sqlalchemy.orm import selectinload
+        stmt = (
+            select(Lead)
+            .where(Lead.id == lead_id)
+            .options(selectinload(Lead.prospect).selectinload(Prospect.company))
+        )
+        res = await self._db.execute(stmt)
+        lead = res.scalar_one_or_none()
+
         if not lead:
             raise ValueError(f"Lead {lead_id} not found")
 

@@ -55,10 +55,20 @@ async def run_sequence_agent_tick(db: AsyncSession) -> dict:
             logger.info(f"Campaign {campaign.id} daily limit reached ({campaign.daily_sends_today}/{campaign.daily_send_limit})")
             continue
 
+        from sqlalchemy.orm import selectinload
         # Fetch leads for this campaign that are ready to advance
-        lead_stmt = select(Lead).where(
-            Lead.campaign_id == campaign.id,
-            Lead.is_stopped == False,
+        lead_stmt = (
+            select(Lead)
+            .where(
+                Lead.campaign_id == campaign.id,
+                Lead.is_stopped == False,
+            )
+            .options(
+                selectinload(Lead.prospect).selectinload(Prospect.company),
+                selectinload(Lead.campaign),
+                selectinload(Lead.research),
+                selectinload(Lead.score),
+            )
         )
         lead_res = await db.execute(lead_stmt)
         leads = lead_res.scalars().all()

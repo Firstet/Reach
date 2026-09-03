@@ -34,7 +34,18 @@ async def run_writer_agent(
     step_number: int = 1,
 ) -> dict:
     """Run writer agent workflow to generate outreach draft."""
-    lead = await db.get(Lead, lead_id)
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Lead)
+        .where(Lead.id == lead_id)
+        .options(
+            selectinload(Lead.prospect).selectinload(Prospect.company),
+            selectinload(Lead.campaign),
+        )
+    )
+    res = await db.execute(stmt)
+    lead = res.scalar_one_or_none()
     if not lead or not lead.prospect:
         raise ValueError(f"Lead {lead_id} missing prospect")
 

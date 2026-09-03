@@ -105,38 +105,40 @@ def get_email_provider():
 
 def get_linkedin_provider():
     """Return the LinkedIn provider (or disabled stub)."""
-    if not _settings.linkedin_enabled:
+    settings = get_settings()
+    if not settings.linkedin_enabled:
         from app.providers.linkedin.playwright_provider import DisabledLinkedInProvider
         return DisabledLinkedInProvider()
     from app.providers.linkedin.playwright_provider import PlaywrightLinkedInProvider
     return PlaywrightLinkedInProvider(
-        session_cookie=_settings.linkedin_session_cookie,
-        rate_limit_per_hour=_settings.linkedin_rate_limit_per_hour,
-        delay_min_ms=_settings.linkedin_human_delay_min_ms,
-        delay_max_ms=_settings.linkedin_human_delay_max_ms,
+        session_cookie=settings.linkedin_session_cookie,
+        rate_limit_per_hour=settings.linkedin_rate_limit_per_hour,
+        delay_min_ms=settings.linkedin_human_delay_min_ms,
+        delay_max_ms=settings.linkedin_human_delay_max_ms,
         enabled=True,
     )
 
 
 def get_notification_provider(email_provider=None):
     """Return the configured notification provider instance."""
-    name = _settings.active_notification_provider
+    settings = get_settings()
+    name = settings.active_notification_provider
     if name == "slack":
         from app.providers.notification.notification_providers import SlackNotificationProvider
         return SlackNotificationProvider(
-            webhook_url=_settings.slack_webhook_url,
-            channel=_settings.slack_notification_channel,
+            webhook_url=settings.slack_webhook_url,
+            channel=settings.slack_notification_channel,
         )
     elif name == "webhook":
         from app.providers.notification.notification_providers import WebhookNotificationProvider
         return WebhookNotificationProvider(
-            webhook_url=_settings.notification_webhook_url,
-            secret=_settings.notification_webhook_secret,
+            webhook_url=settings.notification_webhook_url,
+            secret=settings.notification_webhook_secret,
         )
     else:
         from app.providers.notification.notification_providers import EmailNotificationProvider
         ep = email_provider or get_email_provider()
         return EmailNotificationProvider(
-            escalation_email=_settings.escalation_email,
+            escalation_email=settings.escalation_email,
             email_provider=ep,
         )

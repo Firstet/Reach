@@ -30,7 +30,11 @@ class EnrichmentService:
         enrichment_provider: EnrichmentProvider | None = None,
     ) -> Prospect:
         """Discover and verify email for a prospect."""
-        prospect = await self._db.get(Prospect, prospect_id)
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+        stmt = select(Prospect).where(Prospect.id == prospect_id).options(selectinload(Prospect.company))
+        res = await self._db.execute(stmt)
+        prospect = res.scalar_one_or_none()
         if not prospect:
             raise ValueError(f"Prospect {prospect_id} not found")
 
@@ -99,7 +103,11 @@ class EnrichmentService:
 
     async def update_lead_enrichment_status(self, lead_id: uuid.UUID) -> Lead:
         """Update lead status after enrichment."""
-        lead = await self._db.get(Lead, lead_id)
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+        stmt = select(Lead).where(Lead.id == lead_id).options(selectinload(Lead.prospect))
+        res = await self._db.execute(stmt)
+        lead = res.scalar_one_or_none()
         if not lead:
             raise ValueError(f"Lead {lead_id} not found")
 

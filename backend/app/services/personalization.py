@@ -41,7 +41,17 @@ class PersonalizationService:
         llm: LLMProvider | None = None,
     ) -> GeneratedOutreach:
         """Generate a personalized initial email or follow-up for a lead."""
-        lead = await self._db.get(Lead, lead_id)
+        from sqlalchemy.orm import selectinload
+        stmt = (
+            select(Lead)
+            .where(Lead.id == lead_id)
+            .options(
+                selectinload(Lead.prospect).selectinload(Prospect.company),
+                selectinload(Lead.campaign),
+            )
+        )
+        res = await self._db.execute(stmt)
+        lead = res.scalar_one_or_none()
         if not lead or not lead.prospect:
             raise ValueError(f"Lead {lead_id} missing prospect")
 

@@ -48,7 +48,18 @@ class OutreachService:
         Execute send for a lead's pending draft message.
         Enforces safety checks, test mode, daily limits, and send windows.
         """
-        lead = await self._db.get(Lead, lead_id)
+        from sqlalchemy.orm import selectinload
+        lead_stmt = (
+            select(Lead)
+            .where(Lead.id == lead_id)
+            .options(
+                selectinload(Lead.prospect).selectinload(Prospect.company),
+                selectinload(Lead.campaign),
+            )
+        )
+        lead_res = await self._db.execute(lead_stmt)
+        lead = lead_res.scalar_one_or_none()
+
         if not lead or not lead.prospect:
             return {"success": False, "reason": "Lead or prospect not found"}
 
