@@ -1,4 +1,8 @@
-.PHONY: up down dev logs backend-shell db-shell migrate ingest test prod-up prod-down check-deploy generate-keys
+.PHONY: up down dev logs backend-shell db-shell migrate ingest test prod-up prod-down check-deploy generate-keys sync-vps
+
+## Sync local settings, branding, API keys, SMTP, and database data to VPS
+sync-vps:
+	python3 scripts/sync_to_vps.py
 
 ## Start full stack (detached)
 up:
