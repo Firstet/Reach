@@ -21,6 +21,7 @@ from app.models import (
     MessageDirection,
     MessageStatus,
     OutreachApproval,
+    Prospect,
 )
 from app.providers.registry import get_llm_provider
 from app.services.personalization import PersonalizationService

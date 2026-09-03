@@ -18,7 +18,7 @@ from app.agents.enrichment_agent import run_enrichment_agent
 from app.agents.research_agent import run_research_agent
 from app.agents.scoring_agent import run_scoring_agent
 from app.agents.writer_agent import run_writer_agent
-from app.models import Campaign, CampaignStatus, Lead, LeadStatus
+from app.models import Campaign, CampaignStatus, Lead, LeadStatus, Prospect
 from app.providers.registry import get_email_provider
 from app.services.outreach import OutreachService
 from app.services.safety import is_global_kill_switch_active
