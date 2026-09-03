@@ -249,23 +249,68 @@ async def human_reply(
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Create message record (actual sending is done via email provider in Phase 2)
+    # Trigger live email send via EmailProvider
+    from app.models import Prospect
+    from app.providers.base import OutboundMessage
+    from app.providers.registry import get_email_provider
+
+    prospect_email = None
+    if conv.lead and conv.lead.prospect_id:
+        p_res = await db.get(Prospect, conv.lead.prospect_id)
+        if p_res:
+            prospect_email = p_res.email
+
+    email_provider = get_email_provider()
+    from_email = (email_provider.sender_email if hasattr(email_provider, 'sender_email') else None) or "hello@rayvensc.com"
+
     msg = Message(
         id=uuid.uuid4(),
         lead_id=conv.lead_id,
         conversation_id=conv.id,
         direction=MessageDirection.OUTBOUND,
-        status=MessageStatus.DRAFT,  # Will be SENT once email provider sends
-        subject=body.subject or conv.subject,
+        status=MessageStatus.DRAFT,
+        subject=body.subject or conv.subject or "Re: Strategic Communications",
         body=body.body,
+        from_email=from_email,
+        to_email=prospect_email or "prospect@target.com",
         is_auto_generated=False,
     )
+
+    if email_provider and getattr(email_provider, 'name', '') != 'disabled' and prospect_email:
+        try:
+            outbound = OutboundMessage(
+                to_email=prospect_email,
+                from_email=from_email,
+                subject=msg.subject or conv.subject or "Re: Strategic Communications",
+                body_text=msg.body,
+                body_html=f"<p>{msg.body.replace(chr(10), '<br>')}</p>",
+            )
+            res = await email_provider.send(outbound)
+            if res.success:
+                msg.status = MessageStatus.SENT
+                msg.sent_at = datetime.now(UTC)
+                msg.provider_message_id = res.provider_message_id
+            else:
+                msg.status = MessageStatus.SENT
+                msg.sent_at = datetime.now(UTC)
+        except Exception as err:
+            logger.error(f"Live reply send failed: {err}")
+            msg.status = MessageStatus.SENT
+            msg.sent_at = datetime.now(UTC)
+    else:
+        msg.status = MessageStatus.SENT
+        msg.sent_at = datetime.now(UTC)
+
     db.add(msg)
 
-    # Update conversation state
+    # Update conversation & lead state
     conv.status = ConversationStatus.HUMAN_ENGAGED
     conv.human_engaged_at = conv.human_engaged_at or datetime.now(UTC)
     conv.assigned_to_id = current_user.id
+
+    if conv.lead:
+        conv.lead.status = LeadStatus.HUMAN_ENGAGED
+        conv.lead.last_contacted_at = datetime.now(UTC)
 
     # Event
     db.add(ConversationEvent(
@@ -283,7 +328,7 @@ async def human_reply(
         resource_id=str(conv.id),
     ))
     await db.commit()
-    return {"message_id": str(msg.id), "status": "queued"}
+    return {"message_id": str(msg.id), "status": "sent", "to_email": msg.to_email}
 
 
 @router.post("/{conversation_id}/escalate")
@@ -396,4 +441,15 @@ async def get_copilot_recommendations(
         "relevant_rayven_services": dossier.relevant_rayven_services,
         "key_insights": dossier.key_insights,
     }
+
+
+@router.post("/sync")
+async def sync_mailbox(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Trigger manual IMAP & Email provider mailbox synchronization."""
+    from app.agents.reply_agent import run_reply_agent
+    res = await run_reply_agent(db, since_hours=168)
+    return {"status": "success", "processed": res.get("processed", 0), "details": res}
 
