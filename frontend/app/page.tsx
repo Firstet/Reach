@@ -43,7 +43,11 @@ export default function RavenLandingPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.detail || "Invalid email or password");
+        if (res.status === 401 || res.status === 403) {
+          setError(data.detail || "Invalid email or password");
+        } else {
+          setError(data.detail || `Server returned error (${res.status}). Please check backend.`);
+        }
         setLoading(false);
         return;
       }
