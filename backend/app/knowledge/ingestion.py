@@ -141,12 +141,12 @@ async def search_knowledge_base(
                         kd.title,
                         kd.doc_type,
                         kd.source_url,
-                        1 - (kc.embedding <=> :query_vec::vector) AS similarity
+                        1 - (kc.embedding <=> CAST(:query_vec AS vector)) AS similarity
                     FROM knowledge_chunks kc
                     JOIN knowledge_documents kd ON kd.id = kc.document_id
                     WHERE kd.is_active = true
-                      AND 1 - (kc.embedding <=> :query_vec::vector) >= :threshold
-                    ORDER BY kc.embedding <=> :query_vec::vector
+                      AND 1 - (kc.embedding <=> CAST(:query_vec AS vector)) >= :threshold
+                    ORDER BY kc.embedding <=> CAST(:query_vec AS vector)
                     LIMIT :k
                 """),
                 {"query_vec": embedding_str, "threshold": threshold, "k": k},
@@ -165,6 +165,7 @@ async def search_knowledge_base(
                 ]
         except Exception as e:
             logger.warning(f"Vector search falling back to Python keyword matching: {e}")
+            await db.rollback()
 
     # Fallback: keyword matching against ingested documents
     res = await db.execute(
