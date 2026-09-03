@@ -28,14 +28,25 @@ class Settings(BaseSettings):
     app_debug: bool = False
     app_port: int = 8000
     frontend_url: str = "http://localhost:3000"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] | str = Field(default_factory=lambda: ["http://localhost:3000"])
 
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: str | list) -> list[str]:
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    import json
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed]
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return [str(item).strip() for item in v]
+        return ["http://localhost:3000"]
 
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite+aiosqlite:///./reach.db"
