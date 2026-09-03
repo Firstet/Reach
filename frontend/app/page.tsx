@@ -193,7 +193,7 @@ export default function RavenLandingPage() {
           }}
         >
           {(() => {
-            const titleText = customization?.hero_title || "RAVEN AI";
+            const titleText = customization?.hero_title || "RAYVEN AI";
             const parts = titleText.trim().split(" ");
             if (parts.length > 1) {
               const mainPart = parts.slice(0, -1).join(" ");
@@ -317,7 +317,7 @@ export default function RavenLandingPage() {
           }}
         >
           <span style={{ fontSize: "16px" }}>🔒</span>
-          <span>{isLoggedIn ? "Enter Raven AI Dashboard" : "Login to Raven AI"}</span>
+          <span>{isLoggedIn ? "Enter RAYVEN AI Dashboard" : "Login to RAYVEN AI"}</span>
         </button>
 
         {/* Trust Footnote */}
@@ -370,7 +370,7 @@ export default function RavenLandingPage() {
             {/* Modal Header */}
             <div style={{ textAlign: "center", marginBottom: "28px" }}>
               <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#ffffff", marginBottom: "6px" }}>
-                Login to <span style={{ color: "#d4af37" }}>RAVEN AI</span>
+                Login to <span style={{ color: "#d4af37" }}>RAYVEN AI</span>
               </h2>
               <p style={{ fontSize: "12px", color: "#8a90a2" }}>
                 Enter your administrative credentials to access the workspace

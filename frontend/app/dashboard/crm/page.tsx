@@ -31,6 +31,8 @@ async function apiFetch(path: string, opts?: RequestInit) {
   return res.json();
 }
 
+import { Kanban, Sparkles, UserCheck, Users } from "lucide-react";
+
 export default function CRMPage() {
   const [stages, setStages] = useState<StageConfig[]>([]);
   const [pipeline, setPipeline] = useState<Record<string, LeadItem[]>>({});
@@ -41,9 +43,9 @@ export default function CRMPage() {
     setLoading(true);
     try {
       const data = await apiFetch("/api/v1/crm/pipeline");
-      setStages(data.stage_labels);
-      setPipeline(data.pipeline);
-      setTotalLeads(data.total_leads);
+      setStages(data.stage_labels || []);
+      setPipeline(data.pipeline || {});
+      setTotalLeads(data.total_leads || 0);
     } catch {
       /* not connected */
     } finally {
@@ -66,15 +68,15 @@ export default function CRMPage() {
   };
 
   return (
-    <div style={{ padding: "32px", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ padding: "32px", height: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: "800", letterSpacing: "-0.02em", marginBottom: "4px" }}>
-            CRM Pipeline
+          <h1 style={{ fontSize: "22px", fontWeight: "900", color: "#ffffff", letterSpacing: "-0.02em", marginBottom: "4px" }}>
+            RAYVEN AI CRM Kanban Board
           </h1>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-            {totalLeads} total leads across 12 engagement stages
+            {totalLeads} Total Prospects Managed Across 12 Autonomous Conversion Stages
           </p>
         </div>
       </div>

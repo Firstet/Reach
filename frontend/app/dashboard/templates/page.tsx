@@ -2,6 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import {
+  BookOpen,
+  CheckCircle2,
+  Copy,
+  Edit,
+  Eye,
+  FileText,
+  Plus,
+  Search,
+  Send,
+  Sparkles,
+  Trash2,
+  Zap,
+} from "lucide-react";
 
 interface Template {
   id: string;

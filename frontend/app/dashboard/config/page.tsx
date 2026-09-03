@@ -2,16 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import {
+  Bell,
+  Building2,
+  Database,
+  Globe,
+  KeyRound,
+  Mail,
+  Palette,
+  Search,
+  Settings,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 
 const PROVIDER_TYPES = [
-  { type: "appearance", label: "Home Page & Theme", providers: ["home_customization"], icon: "🎨" },
-  { type: "llm", label: "AI Engine & Personalization", providers: ["openai", "openai_compatible", "anthropic", "gemini", "ollama"], icon: "🧠" },
-  { type: "email", label: "Email Sending (SMTP / OAuth)", providers: ["smtp", "gmail", "outlook"], icon: "📧" },
-  { type: "branding", label: "Branding & Rayven Pitches", providers: ["rayvensc_branding"], icon: "🏛️" },
-  { type: "search", label: "Web Search & Discovery", providers: ["serper", "serpapi", "brave"], icon: "🔍" },
-  { type: "enrichment", label: "EMAIL & LEAD DATA", providers: ["none", "hunter", "apollo", "clearbit"], icon: "⚗" },
-  { type: "linkedin", label: "LinkedIn Automation", providers: ["playwright"], icon: "🔗" },
-  { type: "notification", label: "Escalation & Alerts", providers: ["slack", "webhook"], icon: "🔔" },
+  { type: "appearance", label: "Home Page & Theme", providers: ["home_customization"], icon: Palette },
+  { type: "llm", label: "AI Engine & Personalization", providers: ["openai", "openai_compatible", "anthropic", "gemini", "ollama"], icon: Sparkles },
+  { type: "email", label: "Email Sending (SMTP / OAuth)", providers: ["smtp", "gmail", "outlook"], icon: Mail },
+  { type: "branding", label: "Branding & Rayven Pitches", providers: ["rayvensc_branding"], icon: Building2 },
+  { type: "search", label: "Web Search & Discovery", providers: ["serper", "serpapi", "brave"], icon: Search },
+  { type: "enrichment", label: "Email & Lead Verification", providers: ["none", "hunter", "apollo", "clearbit"], icon: Database },
+  { type: "linkedin", label: "LinkedIn Automation", providers: ["playwright"], icon: UserCheck },
+  { type: "notification", label: "Escalation & Alerts", providers: ["slack", "webhook"], icon: Bell },
 ];
 
 const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret?: boolean; hint?: string; textarea?: boolean; select?: boolean; options?: string[] }>> = {
@@ -32,7 +45,7 @@ const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret
     },
     { key: "logo_url", label: "Home & Platform Logo URL", hint: "/logo.svg or https://yourdomain.com/logo.png" },
     { key: "favicon_url", label: "Browser Favicon URL", hint: "/favicon.svg or https://yourdomain.com/favicon.ico" },
-    { key: "hero_title", label: "Home Page Title / Heading", hint: "RAVEN AI" },
+    { key: "hero_title", label: "Home Page Title / Heading", hint: "RAYVEN AI" },
     { key: "hero_subtitle", label: "Home Page Subtitle / Tagline", hint: "AI Business Development Agent" },
   ],
   openai: [
@@ -357,35 +370,38 @@ export default function ConfigPage() {
             gap: "4px",
           }}
         >
-          {PROVIDER_TYPES.map((section) => (
-            <button
-              key={section.type}
-              onClick={() => {
-                setActiveSection(section.type);
-                setActiveProvider(section.providers[0]);
-                setFieldValues({});
-              }}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "12px 14px",
-                borderRadius: "10px",
-                border: "none",
-                background: activeSection === section.type ? "rgba(201,168,76,0.15)" : "transparent",
-                color: activeSection === section.type ? "#c9a84c" : "var(--text-secondary, #9494a8)",
-                fontSize: "13px",
-                fontWeight: activeSection === section.type ? "700" : "500",
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <span style={{ fontSize: "16px" }}>{section.icon}</span>
-              <span>{section.label}</span>
-            </button>
-          ))}
+          {PROVIDER_TYPES.map((section) => {
+            const Icon = section.icon;
+            return (
+              <button
+                key={section.type}
+                onClick={() => {
+                  setActiveSection(section.type);
+                  setActiveProvider(section.providers[0]);
+                  setFieldValues({});
+                }}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: activeSection === section.type ? "rgba(201,168,76,0.15)" : "transparent",
+                  color: activeSection === section.type ? "#c9a84c" : "var(--text-secondary, #9494a8)",
+                  fontSize: "13px",
+                  fontWeight: activeSection === section.type ? "700" : "500",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Icon size={16} />
+                <span>{section.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Configuration Body Panel */}

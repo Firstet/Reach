@@ -2,6 +2,19 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  AlertTriangle,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Inbox,
+  Mail,
+  MessageSquare,
+  Send,
+  Sparkles,
+  User,
+  UserCheck,
+} from "lucide-react";
 
 interface Conversation {
   id: string;
@@ -180,30 +193,38 @@ function ConversationsInner() {
             Active prospect threads, intent analysis, and AI Copilot assistance
           </p>
         </div>
+
         <div style={{ display: "flex", gap: "8px" }}>
           {[
-            { id: "all", label: "All Threads" },
-            { id: "escalated", label: "🔴 Escalated / HOT" },
-            { id: "daily_logs", label: "📅 Daily Sent Outreach & Reply Logs" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id as any)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "8px",
-                border: filter === tab.id ? "1px solid var(--accent-gold)" : "1px solid var(--border)",
-                background: filter === tab.id ? "rgba(201,168,76,0.15)" : "transparent",
-                color: filter === tab.id ? "var(--accent-gold)" : "var(--text-secondary)",
-                fontSize: "12px",
-                fontWeight: "700",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { id: "all", label: "All Threads", icon: Inbox },
+            { id: "escalated", label: "Needs Human Handoff", icon: AlertTriangle },
+            { id: "daily_logs", label: "Daily Sent Outreach Logs", icon: Calendar },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id as any)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: filter === tab.id ? "1px solid var(--rayven-accent)" : "1px solid var(--border)",
+                  background: filter === tab.id ? "var(--rayven-accent-muted)" : "transparent",
+                  color: filter === tab.id ? "var(--rayven-accent)" : "var(--text-secondary)",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.15s",
+                }}
+              >
+                <Icon size={14} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

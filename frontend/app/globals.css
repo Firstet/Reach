@@ -1,30 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand palette — RayvenSC dark theme */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-card: #16161f;
-  --bg-hover: #1e1e2a;
-  --border: #2a2a38;
-  --border-subtle: #1e1e2a;
+  /* Brand palette — RAYVEN AI dark theme */
+  --bg-primary: #07080c;
+  --bg-secondary: #0f1118;
+  --bg-card: #141622;
+  --bg-hover: #1b1e2e;
+  --border: #24283b;
+  --border-subtle: #191c2b;
 
-  --accent-gold: #c9a84c;
-  --accent-gold-dim: rgba(201, 168, 76, 0.15);
-  --accent-blue: #4c7bc9;
-  --accent-blue-dim: rgba(76, 123, 201, 0.15);
+  /* Rayven Official Accent Tokens — Warm Refined Orange-Gold */
+  --rayven-accent: #e08c18;
+  --rayven-accent-hover: #c87a0c;
+  --rayven-accent-muted: rgba(224, 140, 24, 0.15);
+  --rayven-accent-glow: rgba(224, 140, 24, 0.35);
 
-  --text-primary: #f0f0f5;
-  --text-secondary: #9090a8;
-  --text-muted: #5a5a72;
+  --accent-gold: var(--rayven-accent);
+  --accent-gold-dim: var(--rayven-accent-muted);
+  --accent-blue: #38bdf8;
+  --accent-blue-dim: rgba(56, 189, 248, 0.15);
 
-  --status-new: #4c7bc9;
-  --status-enriched: #4caf50;
-  --status-outreach: #c9a84c;
-  --status-replied: #9c4cc9;
-  --status-escalated: #c94c4c;
-  --status-converted: #4cb89c;
-  --status-stopped: #5a5a72;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --status-new: #38bdf8;
+  --status-enriched: #22c55e;
+  --status-outreach: var(--rayven-accent);
+  --status-replied: #a855f7;
+  --status-escalated: #ef4444;
+  --status-converted: #10b981;
+  --status-stopped: #64748b;
 }
 
 * {

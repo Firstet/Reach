@@ -4,19 +4,36 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 
+import {
+  BookOpen,
+  Building2,
+  CheckSquare,
+  FileText,
+  Inbox,
+  Kanban,
+  LayoutDashboard,
+  LogOut,
+  OctagonAlert,
+  ScrollText,
+  Send,
+  Settings,
+  ShieldBan,
+  Users,
+} from "lucide-react";
+
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Overview", icon: "⬡" },
-  { href: "/dashboard/crm", label: "CRM Board", icon: "📊" },
-  { href: "/dashboard/campaigns", label: "Campaigns", icon: "◈" },
-  { href: "/dashboard/approvals", label: "Approvals", icon: "✉" },
-  { href: "/dashboard/leads", label: "Pipeline", icon: "◉" },
-  { href: "/dashboard/companies", label: "Companies", icon: "🏢" },
-  { href: "/dashboard/conversations", label: "Inbox", icon: "◎" },
-  { href: "/dashboard/templates", label: "Templates", icon: "📑" },
-  { href: "/dashboard/knowledge", label: "Knowledge", icon: "◫" },
-  { href: "/dashboard/suppression", label: "Blocklist", icon: "🛡️" },
-  { href: "/dashboard/audit", label: "Audit Log", icon: "◳" },
-  { href: "/dashboard/config", label: "Settings", icon: "⚙" },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/crm", label: "CRM Board", icon: Kanban },
+  { href: "/dashboard/campaigns", label: "Campaigns", icon: Send },
+  { href: "/dashboard/approvals", label: "Approvals", icon: CheckSquare },
+  { href: "/dashboard/leads", label: "Pipeline", icon: Users },
+  { href: "/dashboard/companies", label: "Companies", icon: Building2 },
+  { href: "/dashboard/conversations", label: "Inbox", icon: Inbox },
+  { href: "/dashboard/templates", label: "Templates", icon: FileText },
+  { href: "/dashboard/knowledge", label: "Knowledge", icon: BookOpen },
+  { href: "/dashboard/suppression", label: "Blocklist", icon: ShieldBan },
+  { href: "/dashboard/audit", label: "Audit Log", icon: ScrollText },
+  { href: "/dashboard/config", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -64,13 +81,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--bg-primary)" }}>
       {/* Sidebar */}
       <aside
         style={{
-          width: "220px",
-          minWidth: "220px",
-          background: "var(--bg-secondary)",
+          width: "230px",
+          minWidth: "230px",
+          background: "linear-gradient(180deg, #0b0d14 0%, #07080c 100%)",
           borderRight: "1px solid var(--border)",
           display: "flex",
           flexDirection: "column",
@@ -81,34 +98,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div
           style={{
-            padding: "20px 20px 16px",
+            padding: "20px 18px 16px",
             borderBottom: "1px solid var(--border-subtle)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <img
+              src="/logo.svg"
+              alt="RAYVEN AI Logo"
               style={{
-                width: "30px",
-                height: "30px",
-                background: "linear-gradient(135deg, #c9a84c, #a87830)",
-                borderRadius: "7px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "15px",
-                fontWeight: "900",
-                color: "#0a0a0f",
-                flexShrink: 0,
+                width: "34px",
+                height: "34px",
+                borderRadius: "8px",
+                boxShadow: "0 0 12px var(--rayven-accent-glow)",
               }}
-            >
-              R
-            </div>
+            />
             <div>
-              <div style={{ fontSize: "15px", fontWeight: "800", lineHeight: "1", letterSpacing: "-0.01em" }}>
-                Reach
+              <div style={{ fontSize: "16px", fontWeight: "900", lineHeight: "1", letterSpacing: "-0.02em", color: "#ffffff" }}>
+                RAYVEN AI
               </div>
-              <div style={{ fontSize: "9px", color: "var(--accent-gold)", fontWeight: "600", letterSpacing: "0.08em", marginTop: "2px" }}>
-                RAYVENSC
+              <div style={{ fontSize: "10px", color: "var(--rayven-accent)", fontWeight: "700", letterSpacing: "0.06em", marginTop: "3px" }}>
+                by RayvenSC
               </div>
             </div>
           </div>
@@ -117,6 +127,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
           {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
@@ -125,22 +136,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "10px",
+                  gap: "11px",
                   padding: "9px 12px",
                   borderRadius: "8px",
-                  marginBottom: "2px",
+                  marginBottom: "3px",
                   textDecoration: "none",
-                  background: active ? "rgba(201,168,76,0.12)" : "transparent",
-                  color: active ? "var(--accent-gold)" : "var(--text-secondary)",
+                  background: active ? "var(--rayven-accent-muted)" : "transparent",
+                  color: active ? "#ffffff" : "var(--text-secondary)",
                   fontSize: "13px",
-                  fontWeight: active ? "600" : "400",
-                  transition: "all 0.15s",
-                  borderLeft: active ? "2px solid var(--accent-gold)" : "2px solid transparent",
+                  fontWeight: active ? "700" : "500",
+                  transition: "all 0.15s ease",
+                  borderLeft: active ? "3px solid var(--rayven-accent)" : "3px solid transparent",
                 }}
               >
-                <span style={{ fontSize: "14px", width: "16px", textAlign: "center" }}>
-                  {item.icon}
-                </span>
+                <Icon
+                  size={17}
+                  style={{
+                    color: active ? "var(--rayven-accent)" : "var(--text-muted)",
+                    flexShrink: 0,
+                  }}
+                />
                 {item.label}
               </Link>
             );
@@ -152,6 +167,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           style={{
             padding: "14px",
             borderTop: "1px solid var(--border-subtle)",
+            background: "rgba(0,0,0,0.2)",
           }}
         >
           <div
@@ -167,13 +183,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 width: "32px",
                 height: "32px",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #2a2a38, #3a3a50)",
+                background: "linear-gradient(135deg, #1b1e2e, #2a2e45)",
+                border: "1px solid var(--border)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "13px",
-                fontWeight: "700",
-                color: "var(--accent-gold)",
+                fontWeight: "800",
+                color: "var(--rayven-accent)",
                 flexShrink: 0,
               }}
             >
@@ -183,17 +200,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <div
                 style={{
                   fontSize: "12px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
+                  fontWeight: "700",
+                  color: "#ffffff",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                 }}
               >
-                {user?.name || "Admin"}
+                {user?.name || "Admin Operator"}
               </div>
               <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "capitalize" }}>
-                {user?.role || "admin"}
+                {user?.role || "System Admin"}
               </div>
             </div>
           </div>
@@ -201,20 +218,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             onClick={toggleKillSwitch}
             style={{
               width: "100%",
-              background: killSwitchActive ? "rgba(201,76,76,0.2)" : "rgba(255,255,255,0.03)",
-              border: `1px solid ${killSwitchActive ? "#c94c4c" : "var(--border)"}`,
+              background: killSwitchActive ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${killSwitchActive ? "#ef4444" : "var(--border)"}`,
               borderRadius: "6px",
               padding: "7px",
-              color: killSwitchActive ? "#ff6b6b" : "var(--text-muted)",
+              color: killSwitchActive ? "#f87171" : "var(--text-muted)",
               fontSize: "11px",
               fontWeight: "700",
               cursor: "pointer",
               marginBottom: "8px",
               letterSpacing: "0.03em",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
               transition: "all 0.15s",
             }}
           >
-            {killSwitchActive ? "🛑 KILL SWITCH ACTIVE" : "⚡ Global Kill Switch"}
+            <OctagonAlert size={13} style={{ color: killSwitchActive ? "#ef4444" : "var(--text-muted)" }} />
+            {killSwitchActive ? "STOPPED (KILL SWITCH)" : "Global Kill Switch"}
           </button>
           <button
             onClick={handleLogout}
@@ -227,17 +249,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               color: "var(--text-muted)",
               fontSize: "11px",
               cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
               transition: "all 0.15s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--accent-gold)";
-              e.currentTarget.style.color = "var(--accent-gold)";
+              e.currentTarget.style.borderColor = "var(--rayven-accent)";
+              e.currentTarget.style.color = "var(--rayven-accent)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "var(--border)";
               e.currentTarget.style.color = "var(--text-muted)";
             }}
           >
+            <LogOut size={13} />
             Sign Out
           </button>
         </div>

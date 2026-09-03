@@ -2,6 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import {
+  BookOpen,
+  CheckCircle2,
+  FileText,
+  Globe,
+  HelpCircle,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 interface DocumentItem {
   id: string;
@@ -34,17 +49,17 @@ interface KBStats {
 }
 
 const CATEGORY_COLORS: Record<string, { label: string; color: string }> = {
-  overview: { label: "Overview", color: "#4c7bc9" },
-  positioning: { label: "Positioning", color: "#9c88ff" },
-  framework: { label: "Rayven Framework", color: "#c9a84c" },
-  services: { label: "Service", color: "#4cb89c" },
-  industries: { label: "Industry", color: "#2e7d32" },
-  faq: { label: "FAQ / Rule", color: "#e67e22" },
-  brand_voice: { label: "Brand Voice", color: "#f39c12" },
-  pricing_rule: { label: "Pricing Rule", color: "#8e44ad" },
-  prohibited_claim: { label: "🚫 Prohibited Claim", color: "#e74c3c" },
-  case_study: { label: "Case Study / Work", color: "#27ae60" },
-  pdf: { label: "Uploaded Document", color: "#2980b9" },
+  overview: { label: "Overview", color: "#38bdf8" },
+  positioning: { label: "Positioning", color: "#a855f7" },
+  framework: { label: "Rayven Framework", color: "var(--rayven-accent)" },
+  services: { label: "Service", color: "#22c55e" },
+  industries: { label: "Industry", color: "#10b981" },
+  faq: { label: "FAQ Rule", color: "#f59e0b" },
+  brand_voice: { label: "Brand Voice", color: "#fb923c" },
+  pricing_rule: { label: "Pricing Policy", color: "#c084fc" },
+  prohibited_claim: { label: "Prohibited Claim", color: "#ef4444" },
+  case_study: { label: "Case Study Work", color: "#16a34a" },
+  pdf: { label: "Uploaded Document", color: "#0284c7" },
 };
 
 export default function KnowledgePage() {

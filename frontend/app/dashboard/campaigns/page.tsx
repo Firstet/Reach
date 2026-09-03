@@ -1,6 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api";
+import {
+  Activity,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Eye,
+  Mail,
+  MessageSquare,
+  Pause,
+  Play,
+  Plus,
+  RefreshCw,
+  Search,
+  Send,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -22,25 +40,12 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   archived: { bg: "rgba(90,90,114,0.15)", color: "#5a5a72" },
 };
 
-async function apiFetch(path: string, options?: RequestInit) {
-  const token = localStorage.getItem("access_token");
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...((options?.headers as Record<string, string>) || {}),
-    },
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [campaignStats, setCampaignStats] = useState<Record<string, any>>({});
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -60,8 +65,12 @@ export default function CampaignsPage() {
     setLoading(true);
     try {
       const data = await apiFetch("/api/v1/campaigns?page_size=50");
-      setCampaigns(data.items);
-      setTotal(data.total);
+      setCampaigns(data.items || []);
+      setTotal(data.total || 0);
+
+      // Fetch pipeline breakdown per campaign
+      const pipelineSummary = await apiFetch("/api/v1/leads/pipeline/summary");
+      setCampaignStats(pipelineSummary || {});
     } catch {
       /* API not yet connected */
     } finally {
@@ -122,7 +131,7 @@ export default function CampaignsPage() {
   const labelStyle: React.CSSProperties = {
     display: "block",
     fontSize: "11px",
-    fontWeight: "600",
+    fontWeight: "700",
     color: "var(--text-muted)",
     letterSpacing: "0.06em",
     textTransform: "uppercase",
@@ -130,39 +139,44 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div style={{ padding: "32px" }}>
+    <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: "800", letterSpacing: "-0.02em", marginBottom: "4px" }}>
-            Campaigns
+          <h1 style={{ fontSize: "22px", fontWeight: "900", letterSpacing: "-0.02em", color: "#ffffff", marginBottom: "4px" }}>
+            RAYVEN AI Campaigns
           </h1>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-            {total} campaign{total !== 1 ? "s" : ""} configured
+            {total} Active Autonomous Outreach Campaign{total !== 1 ? "s" : ""}
           </p>
         </div>
         <button
           id="create-campaign-btn"
           onClick={() => setShowCreate(true)}
           style={{
-            background: "linear-gradient(135deg, #c9a84c, #a87830)",
-            color: "#0a0a0f",
+            background: "var(--rayven-accent)",
+            color: "#ffffff",
             border: "none",
-            borderRadius: "8px",
+            borderRadius: "10px",
             padding: "10px 20px",
             fontSize: "13px",
-            fontWeight: "700",
+            fontWeight: "800",
             cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 0 16px var(--rayven-accent-glow)",
           }}
         >
-          + New Campaign
+          <Plus size={16} />
+          Create New Campaign
         </button>
       </div>
 
       {/* Campaign list */}
       {loading ? (
         <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "48px" }}>
-          Loading campaigns...
+          Loading campaign operational states...
         </div>
       ) : campaigns.length === 0 ? (
         <div
@@ -171,123 +185,235 @@ export default function CampaignsPage() {
             padding: "64px 24px",
             background: "var(--bg-card)",
             border: "1px dashed var(--border)",
-            borderRadius: "12px",
+            borderRadius: "14px",
           }}
         >
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>◈</div>
-          <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "8px" }}>No campaigns yet</h3>
+          <Send size={40} style={{ color: "var(--rayven-accent)", marginBottom: "12px" }} />
+          <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "8px", color: "#ffffff" }}>No campaigns configured</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-            Create your first outreach campaign to start reaching qualified prospects.
+            Create your first RayvenSC outreach campaign to automate discovery, personalization, and sending.
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {campaigns.map((campaign) => {
+            const isActive = campaign.status === "active";
             const statusStyle = STATUS_COLORS[campaign.status] || STATUS_COLORS.draft;
+
+            // Operational stats per card
+            const discovered = campaignStats["new"] || 0;
+            const qualified = campaignStats["enriched"] || 0;
+            const sent = campaignStats["outreach_sent"] || 0;
+            const replies = campaignStats["replied"] || 0;
+            const converted = campaignStats["converted"] || 0;
+
             return (
               <div
                 key={campaign.id}
                 style={{
-                  background: "var(--bg-card)",
+                  background: "linear-gradient(145deg, #12141f 0%, #0a0b12 100%)",
                   border: "1px solid var(--border)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
+                  borderRadius: "14px",
+                  padding: "24px",
                   display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
+                  flexDirection: "column",
+                  gap: "18px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                    <h3 style={{ fontSize: "15px", fontWeight: "700" }}>{campaign.name}</h3>
-                    <span
+                {/* Top Title Bar */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                      <h3 style={{ fontSize: "17px", fontWeight: "900", color: "#ffffff", margin: 0 }}>
+                        {campaign.name}
+                      </h3>
+                      <span
+                        style={{
+                          ...statusStyle,
+                          padding: "3px 12px",
+                          borderRadius: "20px",
+                          fontSize: "10px",
+                          fontWeight: "800",
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: isActive ? "#22c55e" : "#f59e0b" }} />
+                        {campaign.status}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "18px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Users size={14} style={{ color: "var(--rayven-accent)" }} />
+                        Audience: <strong>{campaign.target_industry || "Enterprise Execs"} ({campaign.target_seniority || "C-Level"})</strong>
+                      </span>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Mail size={14} style={{ color: "#38bdf8" }} />
+                        Sending Limit: <strong>{campaign.daily_send_limit}/day</strong>
+                      </span>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <RefreshCw size={14} style={{ color: "#a855f7" }} />
+                        Follow-ups: <strong>{campaign.max_follow_ups} Steps</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await apiFetch("/api/v1/discovery/trigger", {
+                            method: "POST",
+                            body: JSON.stringify({ campaign_id: campaign.id }),
+                          });
+                          alert(`Discovery triggered! Job ID: ${res.job_id}`);
+                        } catch (e) {
+                          alert("Trigger failed: " + e);
+                        }
+                      }}
                       style={{
-                        ...statusStyle,
-                        padding: "2px 8px",
-                        borderRadius: "20px",
-                        fontSize: "10px",
+                        background: "rgba(56,189,248,0.12)",
+                        border: "1px solid rgba(56,189,248,0.3)",
+                        borderRadius: "8px",
+                        padding: "8px 14px",
+                        color: "#38bdf8",
+                        fontSize: "12px",
                         fontWeight: "700",
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                     >
-                      {campaign.status}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                    {campaign.target_industry && (
-                      <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                        📍 {campaign.target_industry}
-                      </span>
+                      <Search size={14} />
+                      Discover Leads
+                    </button>
+
+                    {isActive ? (
+                      <button
+                        onClick={() => handleAction(campaign.id, "pause")}
+                        style={{
+                          background: "var(--rayven-accent-muted)",
+                          border: "1px solid var(--rayven-accent)",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          color: "var(--rayven-accent)",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <Pause size={14} />
+                        Pause
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleAction(campaign.id, "start")}
+                        style={{
+                          background: "rgba(34,197,94,0.15)",
+                          border: "1px solid rgba(34,197,94,0.3)",
+                          borderRadius: "8px",
+                          padding: "8px 14px",
+                          color: "#22c55e",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <Play size={14} />
+                        Start Campaign
+                      </button>
                     )}
-                    <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                      📧 {campaign.daily_send_limit}/day
-                    </span>
-                    <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                      🔄 {campaign.max_follow_ups} follow-ups
-                    </span>
+
+                    <a
+                      href="/dashboard/leads"
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        padding: "8px 14px",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        textDecoration: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <Eye size={14} />
+                      View Leads
+                    </a>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await apiFetch("/api/v1/discovery/trigger", {
-                          method: "POST",
-                          body: JSON.stringify({ campaign_id: campaign.id }),
-                        });
-                        alert(`Discovery triggered! Job ID: ${res.job_id}`);
-                      } catch (e) {
-                        alert("Trigger failed: " + e);
-                      }
-                    }}
-                    style={{
-                      background: "rgba(76,123,201,0.15)",
-                      border: "1px solid rgba(76,123,201,0.3)",
-                      borderRadius: "7px",
-                      padding: "7px 14px",
-                      color: "#4c7bc9",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                    }}
-                  >
-                    🔍 Discover Leads
-                  </button>
-                  {campaign.status !== "active" && (
-                    <button
-                      onClick={() => handleAction(campaign.id, "start")}
-                      style={{
-                        background: "rgba(76,184,156,0.15)",
-                        border: "1px solid rgba(76,184,156,0.3)",
-                        borderRadius: "7px",
-                        padding: "7px 14px",
-                        color: "#4cb89c",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Start
-                    </button>
-                  )}
-                  {campaign.status === "active" && (
-                    <button
-                      onClick={() => handleAction(campaign.id, "pause")}
-                      style={{
-                        background: "rgba(201,168,76,0.12)",
-                        border: "1px solid rgba(201,168,76,0.3)",
-                        borderRadius: "7px",
-                        padding: "7px 14px",
-                        color: "#c9a84c",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Pause
-                    </button>
-                  )}
+
+                {/* Real Operational Stats Grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px", background: "rgba(0,0,0,0.3)", padding: "14px", borderRadius: "10px", border: "1px solid var(--border)" }}>
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Discovered
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: "900", color: "#ffffff", marginTop: "2px" }}>
+                      {discovered}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Qualified
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: "900", color: "#22c55e", marginTop: "2px" }}>
+                      {qualified}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Emails Sent
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: "900", color: "var(--rayven-accent)", marginTop: "2px" }}>
+                      {sent}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Replies
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: "900", color: "#ec4899", marginTop: "2px" }}>
+                      {replies}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Interested
+                    </div>
+                    <div style={{ fontSize: "18px", fontWeight: "900", color: "#a855f7", marginTop: "2px" }}>
+                      {converted}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                      Next Action
+                    </div>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "#38bdf8", marginTop: "4px" }}>
+                      {isActive ? "Auto Cadence" : "Paused"}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

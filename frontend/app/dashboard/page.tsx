@@ -1,12 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  BookOpen,
+  CheckCircle2,
+  Flame,
+  Kanban,
+  Mail,
+  MessageSquare,
+  Plus,
+  Send,
+  Settings,
+  Sparkles,
+  Users,
+  Zap,
+} from "lucide-react";
+import AutomationEngineStatus from "../components/AutomationEngineStatus";
 
 interface Stats {
   campaigns: number;
   leads: number;
   conversations: number;
   escalated: number;
+  sent_emails: number;
+  replies: number;
   pipeline: Record<string, number>;
 }
 
@@ -15,19 +33,20 @@ interface StatCardProps {
   value: string | number;
   subtitle?: string;
   accent?: string;
-  icon?: string;
+  icon?: any;
 }
 
-function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
+function StatCard({ title, value, subtitle, accent, icon: Icon }: StatCardProps) {
   return (
     <div
       style={{
         background: "var(--bg-card)",
         border: "1px solid var(--border)",
-        borderRadius: "12px",
+        borderRadius: "14px",
         padding: "20px 24px",
         position: "relative",
         overflow: "hidden",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
       }}
     >
       {accent && (
@@ -37,7 +56,7 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
             top: 0,
             left: 0,
             right: 0,
-            height: "2px",
+            height: "3px",
             background: accent,
           }}
         />
@@ -47,7 +66,7 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
           <div
             style={{
               fontSize: "11px",
-              fontWeight: "600",
+              fontWeight: "700",
               color: "var(--text-muted)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -59,8 +78,8 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
           <div
             style={{
               fontSize: "32px",
-              fontWeight: "800",
-              color: "var(--text-primary)",
+              fontWeight: "900",
+              color: "#ffffff",
               letterSpacing: "-0.02em",
               lineHeight: "1",
             }}
@@ -73,12 +92,11 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
             </div>
           )}
         </div>
-        {icon && (
+        {Icon && (
           <div
             style={{
-              fontSize: "24px",
-              opacity: 0.4,
-              background: "var(--bg-hover)",
+              background: "var(--rayven-accent-muted)",
+              color: "var(--rayven-accent)",
               width: "44px",
               height: "44px",
               borderRadius: "10px",
@@ -87,7 +105,7 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
               justifyContent: "center",
             }}
           >
-            {icon}
+            <Icon size={22} />
           </div>
         )}
       </div>
@@ -96,13 +114,13 @@ function StatCard({ title, value, subtitle, accent, icon }: StatCardProps) {
 }
 
 const PIPELINE_STAGES = [
-  { key: "new", label: "New", color: "#4c7bc9" },
-  { key: "enriched", label: "Enriched", color: "#4caf50" },
-  { key: "outreach_sent", label: "Outreach Sent", color: "#c9a84c" },
-  { key: "follow_up", label: "Follow-up", color: "#9c88ff" },
-  { key: "replied", label: "Replied", color: "#9c4cc9" },
-  { key: "escalated", label: "Escalated", color: "#c94c4c" },
-  { key: "converted", label: "Converted", color: "#4cb89c" },
+  { key: "new", label: "New Leads", color: "#38bdf8" },
+  { key: "enriched", label: "Enriched", color: "#22c55e" },
+  { key: "outreach_sent", label: "Outreach Sent", color: "var(--rayven-accent)" },
+  { key: "follow_up", label: "Follow-up", color: "#a855f7" },
+  { key: "replied", label: "Replied", color: "#ec4899" },
+  { key: "escalated", label: "Escalated", color: "#ef4444" },
+  { key: "converted", label: "Converted", color: "#10b981" },
 ];
 
 async function apiFetch(path: string) {
@@ -120,6 +138,8 @@ export default function DashboardPage() {
     leads: 0,
     conversations: 0,
     escalated: 0,
+    sent_emails: 0,
+    replies: 0,
     pipeline: {},
   });
   const [loading, setLoading] = useState(true);
@@ -127,23 +147,36 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [campaigns, pipeline, conversations] = await Promise.all([
+        const [campaigns, pipeline, conversations, dailyLogs] = await Promise.all([
           apiFetch("/api/v1/campaigns?page_size=1"),
           apiFetch("/api/v1/leads/pipeline/summary"),
           apiFetch("/api/v1/conversations?page_size=1"),
+          apiFetch("/api/v1/conversations/daily-outreach-logs"),
         ]);
         const totalLeads = Object.values(pipeline as Record<string, number>).reduce(
           (a, b) => a + b, 0
         );
+
+        let totalSent = 0;
+        let totalReplies = 0;
+        if (dailyLogs?.dates) {
+          for (const d of dailyLogs.dates) {
+            totalSent += d.total_sent || 0;
+            totalReplies += d.total_replies || 0;
+          }
+        }
+
         setStats({
           campaigns: campaigns.total ?? 0,
           leads: totalLeads,
           conversations: conversations.total ?? 0,
           escalated: (pipeline as Record<string, number>)["escalated"] ?? 0,
+          sent_emails: totalSent,
+          replies: totalReplies,
           pipeline: pipeline,
         });
       } catch {
-        // Stats will stay at 0 if API is not yet connected
+        // Stats stay at real 0
       } finally {
         setLoading(false);
       }
@@ -154,70 +187,80 @@ export default function DashboardPage() {
   const totalLeads = Object.values(stats.pipeline).reduce((a, b) => a + b, 0);
 
   return (
-    <div style={{ padding: "32px" }}>
+    <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
           <div
             style={{
               width: "4px",
-              height: "24px",
-              background: "linear-gradient(180deg, #c9a84c, #a87830)",
+              height: "26px",
+              background: "var(--rayven-accent)",
               borderRadius: "2px",
+              boxShadow: "0 0 10px var(--rayven-accent-glow)",
             }}
           />
           <h1
             style={{
-              fontSize: "22px",
-              fontWeight: "800",
-              color: "var(--text-primary)",
+              fontSize: "24px",
+              fontWeight: "900",
+              color: "#ffffff",
               letterSpacing: "-0.02em",
             }}
           >
-            Business Development Overview
+            RAYVEN AI — Business Development Operating System
           </h1>
         </div>
         <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginLeft: "16px" }}>
-          Rayven Strategic Communications · AI Outreach Intelligence
+          Rayven Strategic Communications · Autonomous Enterprise Outreach & Personalization Platform
         </p>
       </div>
 
-      {/* Top stats */}
+      {/* Real-time Automation Engine Status Widget */}
+      <AutomationEngineStatus />
+
+      {/* Operational Stats Grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "16px",
-          marginBottom: "24px",
         }}
       >
         <StatCard
           title="Active Campaigns"
-          value={loading ? "—" : stats.campaigns}
+          value={loading ? "0" : stats.campaigns}
           subtitle="Configured campaigns"
-          accent="linear-gradient(90deg, #c9a84c, #a87830)"
-          icon="◈"
+          accent="linear-gradient(90deg, var(--rayven-accent), #c87a0c)"
+          icon={Send}
         />
         <StatCard
-          title="Total Leads"
-          value={loading ? "—" : totalLeads}
-          subtitle="Across all campaigns"
-          accent="linear-gradient(90deg, #4c7bc9, #3a60a0)"
-          icon="◉"
+          title="Total Prospect Leads"
+          value={loading ? "0" : totalLeads}
+          subtitle="Discovered enterprise leads"
+          accent="linear-gradient(90deg, #38bdf8, #0284c7)"
+          icon={Users}
         />
         <StatCard
-          title="Conversations"
-          value={loading ? "—" : stats.conversations}
-          subtitle="Active threads"
-          accent="linear-gradient(90deg, #4cb89c, #3a9080)"
-          icon="◎"
+          title="Emails Sent Out"
+          value={loading ? "0" : stats.sent_emails}
+          subtitle="Verified outbound dispatches"
+          accent="linear-gradient(90deg, #a855f7, #7e22ce)"
+          icon={Mail}
         />
         <StatCard
-          title="Needs Attention"
-          value={loading ? "—" : stats.escalated}
-          subtitle="Escalated to human"
-          accent="linear-gradient(90deg, #c94c4c, #a03838)"
-          icon="⚠"
+          title="Prospect Replies"
+          value={loading ? "0" : stats.replies}
+          subtitle="Inbound engagement"
+          accent="linear-gradient(90deg, #ec4899, #be185d)"
+          icon={MessageSquare}
+        />
+        <StatCard
+          title="Escalated Threads"
+          value={loading ? "0" : stats.escalated}
+          subtitle="Human operator handoffs"
+          accent="linear-gradient(90deg, #ef4444, #b91c1c)"
+          icon={AlertTriangle}
         />
       </div>
 
@@ -226,34 +269,39 @@ export default function DashboardPage() {
         style={{
           background: "var(--bg-card)",
           border: "1px solid var(--border)",
-          borderRadius: "12px",
+          borderRadius: "14px",
           padding: "24px",
-          marginBottom: "24px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
         }}
       >
-        <div
-          style={{
-            fontSize: "13px",
-            fontWeight: "700",
-            color: "var(--text-secondary)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            marginBottom: "20px",
-          }}
-        >
-          Lead Pipeline
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: "800",
+              color: "var(--text-secondary)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Lead Pipeline Funnel
+          </div>
+          <div style={{ fontSize: "12px", color: "var(--rayven-accent)", fontWeight: "700" }}>
+            Total Pipeline Volume: {totalLeads}
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {PIPELINE_STAGES.map((stage) => {
             const count = stats.pipeline[stage.key] ?? 0;
             const pct = totalLeads > 0 ? (count / totalLeads) * 100 : 0;
             return (
-              <div key={stage.key} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div key={stage.key} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 <div
                   style={{
-                    width: "100px",
-                    fontSize: "12px",
+                    width: "120px",
+                    fontSize: "13px",
+                    fontWeight: "600",
                     color: "var(--text-secondary)",
                     flexShrink: 0,
                   }}
@@ -263,9 +311,9 @@ export default function DashboardPage() {
                 <div
                   style={{
                     flex: 1,
-                    height: "6px",
-                    background: "var(--bg-hover)",
-                    borderRadius: "3px",
+                    height: "8px",
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: "4px",
                     overflow: "hidden",
                   }}
                 >
@@ -274,17 +322,18 @@ export default function DashboardPage() {
                       width: `${pct}%`,
                       height: "100%",
                       background: stage.color,
-                      borderRadius: "3px",
+                      borderRadius: "4px",
                       transition: "width 0.8s ease",
+                      boxShadow: `0 0 10px ${stage.color}40`,
                     }}
                   />
                 </div>
                 <div
                   style={{
-                    width: "32px",
+                    width: "40px",
                     fontSize: "13px",
-                    fontWeight: "700",
-                    color: count > 0 ? "var(--text-primary)" : "var(--text-muted)",
+                    fontWeight: "800",
+                    color: count > 0 ? "#ffffff" : "var(--text-muted)",
                     textAlign: "right",
                     flexShrink: 0,
                   }}
@@ -302,84 +351,87 @@ export default function DashboardPage() {
         style={{
           background: "var(--bg-card)",
           border: "1px solid var(--border)",
-          borderRadius: "12px",
+          borderRadius: "14px",
           padding: "24px",
         }}
       >
         <div
           style={{
             fontSize: "13px",
-            fontWeight: "700",
+            fontWeight: "800",
             color: "var(--text-secondary)",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
             marginBottom: "16px",
           }}
         >
-          Quick Actions
+          Quick Control Actions
         </div>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           {[
-            { href: "/dashboard/campaigns", label: "New Campaign", icon: "◈" },
-            { href: "/dashboard/leads", label: "Add Leads", icon: "◉" },
-            { href: "/dashboard/conversations?escalated=true", label: "View Escalated", icon: "⚠" },
-            { href: "/dashboard/knowledge", label: "Knowledge Base", icon: "◫" },
-            { href: "/dashboard/config", label: "Configure Providers", icon: "⚙" },
-          ].map((action) => (
-            <a
-              key={action.href}
-              href={action.href}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                color: "var(--text-primary)",
-                fontSize: "13px",
-                fontWeight: "500",
-                textDecoration: "none",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent-gold)";
-                e.currentTarget.style.color = "var(--accent-gold)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border)";
-                e.currentTarget.style.color = "var(--text-primary)";
-              }}
-            >
-              <span>{action.icon}</span>
-              {action.label}
-            </a>
-          ))}
+            { href: "/dashboard/campaigns", label: "Create Campaign", icon: Plus },
+            { href: "/dashboard/leads", label: "Discover Leads", icon: Users },
+            { href: "/dashboard/conversations?escalated=true", label: "View Escalated", icon: AlertTriangle },
+            { href: "/dashboard/knowledge", label: "Knowledge Base", icon: BookOpen },
+            { href: "/dashboard/config", label: "Provider Settings", icon: Settings },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <a
+                key={action.href}
+                href={action.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "9px",
+                  padding: "10px 18px",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "10px",
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontWeight: "700",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--rayven-accent)";
+                  e.currentTarget.style.color = "var(--rayven-accent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+              >
+                <Icon size={16} />
+                {action.label}
+              </a>
+            );
+          })}
         </div>
       </div>
 
-      {/* Reach principle footer */}
+      {/* Rayven principle footer */}
       <div
         style={{
-          marginTop: "32px",
           padding: "16px 20px",
-          background: "rgba(201,168,76,0.05)",
-          border: "1px solid rgba(201,168,76,0.15)",
-          borderRadius: "8px",
+          background: "var(--rayven-accent-muted)",
+          border: "1px solid var(--rayven-accent-glow)",
+          borderRadius: "10px",
           display: "flex",
           alignItems: "center",
           gap: "12px",
         }}
       >
-        <div style={{ fontSize: "16px" }}>◈</div>
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: "1.5" }}>
+        <Sparkles size={18} style={{ color: "var(--rayven-accent)", flexShrink: 0 }} />
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: "1.5", margin: 0 }}>
           "Communication must be engineered, not improvised." — The Rayven Framework ·{" "}
-          <span style={{ color: "var(--accent-gold)" }}>
-            Reach generates relevant conversations, not spam.
+          <span style={{ color: "var(--rayven-accent)", fontWeight: "700" }}>
+            RAYVEN AI generates high-converting, peer-level executive conversations.
           </span>
         </p>
       </div>
     </div>
   );
 }
+

@@ -2,23 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Eye,
+  FileText,
+  Filter,
+  Mail,
+  RefreshCw,
+  Search,
+  Sparkles,
+  UserCheck,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  new: { label: "New Lead", bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
-  discovered: { label: "Discovered", bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
-  enriched: { label: "Enriched", bg: "rgba(16,185,129,0.12)", color: "#34d399", border: "rgba(16,185,129,0.3)" },
-  researched: { label: "Researched", bg: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "rgba(245,158,11,0.3)" },
-  scored: { label: "Scored", bg: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "rgba(245,158,11,0.3)" },
-  qualified: { label: "Qualified", bg: "rgba(201,168,76,0.15)", color: "#c9a84c", border: "rgba(201,168,76,0.4)" },
-  outreach_pending: { label: "Outreach Pending", bg: "rgba(139,92,246,0.12)", color: "#a78bfa", border: "rgba(139,92,246,0.3)" },
-  outreach_sent: { label: "Outreach Sent", bg: "rgba(139,92,246,0.15)", color: "#c084fc", border: "rgba(139,92,246,0.4)" },
-  follow_up: { label: "Follow-up Scheduled", bg: "rgba(168,85,247,0.15)", color: "#e879f9", border: "rgba(168,85,247,0.4)" },
-  delivered: { label: "Delivered", bg: "rgba(16,185,129,0.15)", color: "#34d399", border: "rgba(16,185,129,0.4)" },
-  replied: { label: "Replied", bg: "rgba(6,182,212,0.15)", color: "#38bdf8", border: "rgba(6,182,212,0.4)" },
-  escalated: { label: "🚨 Needs Human Service", bg: "rgba(239,68,68,0.18)", color: "#f87171", border: "rgba(239,68,68,0.4)" },
-  human_engaged: { label: "🙋 Human Engaged", bg: "rgba(249,115,22,0.18)", color: "#fb923c", border: "rgba(249,115,22,0.4)" },
-  converted: { label: "🏆 Converted / Client", bg: "rgba(212,175,55,0.2)", color: "#fef08a", border: "rgba(212,175,55,0.5)" },
-  not_interested: { label: "Not Interested", bg: "rgba(107,114,128,0.12)", color: "#9ca3af", border: "rgba(107,114,128,0.3)" },
+  new: { label: "New Lead", bg: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "rgba(56,189,248,0.3)" },
+  discovered: { label: "Discovered", bg: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "rgba(56,189,248,0.3)" },
+  enriched: { label: "Enriched", bg: "rgba(34,197,94,0.12)", color: "#22c55e", border: "rgba(34,197,94,0.3)" },
+  researched: { label: "Researched", bg: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "rgba(245,158,11,0.3)" },
+  scored: { label: "Scored", bg: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "rgba(245,158,11,0.3)" },
+  qualified: { label: "Qualified", bg: "var(--rayven-accent-muted)", color: "var(--rayven-accent)", border: "rgba(224,140,24,0.4)" },
+  outreach_pending: { label: "Outreach Pending", bg: "rgba(168,85,247,0.12)", color: "#a855f7", border: "rgba(168,85,247,0.3)" },
+  outreach_sent: { label: "Outreach Sent", bg: "rgba(168,85,247,0.15)", color: "#c084fc", border: "rgba(168,85,247,0.4)" },
+  follow_up: { label: "Follow-up Scheduled", bg: "rgba(236,72,153,0.15)", color: "#f472b6", border: "rgba(236,72,153,0.4)" },
+  delivered: { label: "Delivered", bg: "rgba(34,197,94,0.15)", color: "#22c55e", border: "rgba(34,197,94,0.4)" },
+  replied: { label: "Replied", bg: "rgba(56,189,248,0.15)", color: "#38bdf8", border: "rgba(56,189,248,0.4)" },
+  escalated: { label: "Needs Human Handoff", bg: "rgba(239,68,68,0.18)", color: "#f87171", border: "rgba(239,68,68,0.4)" },
+  human_engaged: { label: "Human Engaged", bg: "rgba(249,115,22,0.18)", color: "#fb923c", border: "rgba(249,115,22,0.4)" },
+  converted: { label: "Converted Client", bg: "var(--rayven-accent-muted)", color: "var(--rayven-accent)", border: "var(--rayven-accent)" },
+  not_interested: { label: "Not Interested", bg: "rgba(100,116,139,0.12)", color: "#94a3b8", border: "rgba(100,116,139,0.3)" },
 };
 
 interface ProspectInfo {
