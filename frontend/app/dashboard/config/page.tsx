@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 const PROVIDER_TYPES = [
+  { type: "appearance", label: "Home Page & Theme", providers: ["home_customization"], icon: "🎨" },
   { type: "llm", label: "AI Engine & Personalization", providers: ["openai", "openai_compatible", "anthropic", "gemini", "ollama"], icon: "🧠" },
   { type: "email", label: "Email Sending (SMTP / OAuth)", providers: ["smtp", "gmail", "outlook"], icon: "📧" },
   { type: "branding", label: "Branding & Rayven Pitches", providers: ["rayvensc_branding"], icon: "🏛️" },
@@ -12,7 +13,27 @@ const PROVIDER_TYPES = [
   { type: "notification", label: "Escalation & Alerts", providers: ["slack", "webhook"], icon: "🔔" },
 ];
 
-const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret?: boolean; hint?: string; textarea?: boolean }>> = {
+const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret?: boolean; hint?: string; textarea?: boolean; select?: boolean; options?: string[] }>> = {
+  home_customization: [
+    {
+      key: "font_family",
+      label: "Platform Font Family",
+      select: true,
+      options: ["Inter", "Outfit", "Plus Jakarta Sans", "Roboto", "Space Grotesk", "Playfair Display", "System Default"],
+      hint: "Select primary typography style for the home page and platform UI",
+    },
+    {
+      key: "font_size_scale",
+      label: "Base Font Size Scale",
+      select: true,
+      options: ["14px", "15px", "16px", "18px", "20px"],
+      hint: "Base font scale across the platform",
+    },
+    { key: "logo_url", label: "Home & Platform Logo URL", hint: "/logo.svg or https://yourdomain.com/logo.png" },
+    { key: "favicon_url", label: "Browser Favicon URL", hint: "/favicon.svg or https://yourdomain.com/favicon.ico" },
+    { key: "hero_title", label: "Home Page Title / Heading", hint: "RAVEN AI" },
+    { key: "hero_subtitle", label: "Home Page Subtitle / Tagline", hint: "AI Business Development Agent" },
+  ],
   openai: [
     { key: "api_key", label: "OpenAI API Key", secret: true },
     { key: "model", label: "Default Model", hint: "gpt-4o" },
@@ -139,8 +160,8 @@ async function apiFetch(path: string, opts?: RequestInit) {
 
 export default function ConfigPage() {
   const [health, setHealth] = useState<Record<string, any>>({});
-  const [activeSection, setActiveSection] = useState("llm");
-  const [activeProvider, setActiveProvider] = useState("openai");
+  const [activeSection, setActiveSection] = useState("appearance");
+  const [activeProvider, setActiveProvider] = useState("home_customization");
   const [emailPolicy, setEmailPolicy] = useState("verified_only");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [savedConfigs, setSavedConfigs] = useState<Record<string, any>>({});
@@ -185,6 +206,15 @@ export default function ConfigPage() {
         });
       }
       setFieldValues(initial);
+    } else if (activeProvider === "home_customization") {
+      setFieldValues({
+        font_family: "Inter",
+        font_size_scale: "16px",
+        logo_url: "/logo.svg",
+        favicon_url: "/favicon.svg",
+        hero_title: "RAVEN AI",
+        hero_subtitle: "AI Business Development Agent",
+      });
     } else if (activeProvider === "rayvensc_branding") {
       setFieldValues({
         company_name: "Rayven Strategic Communications",
@@ -497,7 +527,7 @@ export default function ConfigPage() {
               )}
 
               {fields.length > 0 &&
-                fields.map(({ key, label, secret, hint, textarea }) => (
+                fields.map(({ key, label, secret, hint, textarea, select, options }) => (
                   <div key={key} style={{ marginBottom: "20px" }}>
                     <label
                       style={{
@@ -512,7 +542,19 @@ export default function ConfigPage() {
                     >
                       {label}
                     </label>
-                    {textarea ? (
+                    {select ? (
+                      <select
+                        value={fieldValues[key] || options?.[0] || ""}
+                        onChange={(e) => setFieldValues((f) => ({ ...f, [key]: e.target.value }))}
+                        style={inputStyle}
+                      >
+                        {options?.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : textarea ? (
                       <textarea
                         rows={4}
                         placeholder={hint || ""}

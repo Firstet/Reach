@@ -39,6 +39,23 @@ def _mask_secrets(secrets: dict) -> dict:
     return {k: "***" if v else "" for k, v in secrets.items()}
 
 
+@router.get("/public")
+async def get_public_config(db: AsyncSession = Depends(get_db)):
+    """Return non-secret public customization configurations (e.g. home_customization, branding)."""
+    result = await db.execute(
+        select(ProviderConfig).where(ProviderConfig.provider_type.in_(["appearance", "branding"]))
+    )
+    configs = result.scalars().all()
+    providers = []
+    for c in configs:
+        providers.append({
+            "provider_type": c.provider_type,
+            "provider_name": c.provider_name,
+            "config_data": c.config_data,
+        })
+    return {"providers": providers}
+
+
 @router.get("")
 async def get_config(
     db: AsyncSession = Depends(get_db),

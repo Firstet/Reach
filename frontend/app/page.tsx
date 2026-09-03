@@ -2,9 +2,11 @@
 
 import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useCustomization } from "./components/ThemeApplicator";
 
 export default function RavenLandingPage() {
   const router = useRouter();
+  const customization = useCustomization();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -164,13 +166,14 @@ export default function RavenLandingPage() {
         {/* Raven Official Emblem Logo */}
         <div style={{ marginBottom: "24px" }}>
           <img
-            src="/logo.svg"
-            alt="Raven AI Logo Emblem"
+            src={customization?.logo_url || "/logo.svg"}
+            alt="Logo Emblem"
             width="88"
             height="88"
             style={{
               filter: "drop-shadow(0 6px 28px rgba(247, 148, 29, 0.45))",
               borderRadius: "20px",
+              objectFit: "contain",
             }}
           />
         </div>
@@ -178,27 +181,20 @@ export default function RavenLandingPage() {
         {/* Brand Title / Wordmark */}
         <h1
           style={{
-            fontSize: "clamp(42px, 6vw, 64px)",
+            fontSize: "clamp(36px, 5.5vw, 64px)",
             fontWeight: "900",
-            letterSpacing: "0.18em",
+            letterSpacing: "0.14em",
             textTransform: "uppercase",
             margin: 0,
-            lineHeight: 1,
+            lineHeight: 1.1,
             display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
             alignItems: "center",
-            gap: "16px",
+            gap: "12px",
           }}
         >
-          <span style={{ color: "#ffffff" }}>RAVEN</span>
-          <span
-            style={{
-              background: "linear-gradient(135deg, #fbb03b 0%, #f7941d 55%, #d36f0a 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            AI
-          </span>
+          <span style={{ color: "#ffffff" }}>{customization?.hero_title || "RAVEN AI"}</span>
         </h1>
 
         {/* Subtitle */}
@@ -212,7 +208,7 @@ export default function RavenLandingPage() {
             marginBottom: "20px",
           }}
         >
-          AI Business Development Agent
+          {customization?.hero_subtitle || "AI Business Development Agent"}
         </p>
 
         {/* Thin Subtle Gold Divider */}
