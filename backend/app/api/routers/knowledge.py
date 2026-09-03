@@ -237,20 +237,21 @@ async def query_knowledge_base(
     current_user: User = Depends(get_current_user),
 ):
     """
-    RAG query search with strict anti-hallucination and source attribution.
+    RAG query search with strict anti-hallucination, fallback keyword retrieval, and source attribution.
     """
     from app.services.knowledge_agent import RayvenKnowledgeAgent
 
-    llm = get_llm_provider()
     agent = RayvenKnowledgeAgent(db)
 
-    results = await agent.search_with_citations(llm, query=body.query, k=body.k, threshold=body.threshold)
+    try:
+        llm = get_llm_provider()
+    except Exception:
+        llm = None
 
     query_lower = body.query.lower()
 
     # STRICT ANTI-HALLUCINATION CHECK FOR PRICING
-    if "cost" in query_lower or "price" in query_lower or "charge" in query_lower or "fee" in query_lower or "rate" in query_lower:
-        # Check if explicit pricing rule exists in DB
+    if any(w in query_lower for w in ["cost", "price", "charge", "fee", "rate"]):
         pricing_rules = await agent.get_all_rules_of_category("pricing_rule")
         if not pricing_rules:
             return {
@@ -271,6 +272,12 @@ async def query_knowledge_base(
                 ],
             }
 
+    try:
+        results = await agent.search_with_citations(llm, query=body.query, k=body.k, threshold=body.threshold)
+    except Exception as e:
+        logger.warning(f"RAG search_with_citations exception: {e}")
+        results = []
+
     if not results:
         return {
             "query": body.query,
@@ -282,32 +289,48 @@ async def query_knowledge_base(
 
     # Synthesize RAG context
     context = "\n\n".join([f"{r.citation}\n{r.content}" for r in results])
-    system_prompt = (
-        "You are RayvenSC's AI Business Development Assistant. Answer the prospect's query using ONLY the "
-        "provided approved internal knowledge context. Cite sources using [Source: Title (URL)]. "
-        "Never invent prices, clients, results, statistics, or non-existent claims. "
-        "If evidence is insufficient, state that approved information is limited and offer escalation."
-    )
-    user_prompt = f"Approved Internal Knowledge:\n{context}\n\nProspect Question: {body.query}"
+    sources_payload = [
+        {
+            "title": r.title,
+            "source_url": r.source_url,
+            "citation": r.citation,
+        }
+        for r in results
+    ]
 
-    answer = await llm.complete(
-        [LLMMessage(role="system", content=system_prompt), LLMMessage(role="user", content=user_prompt)],
-        temperature=0.3,
-    )
+    if llm:
+        try:
+            system_prompt = (
+                "You are RayvenSC's AI Business Development Assistant. Answer the prospect's query using ONLY the "
+                "provided approved internal knowledge context. Cite sources using [Source: Title (URL)]. "
+                "Never invent prices, clients, results, statistics, or non-existent claims. "
+                "If evidence is insufficient, state that approved information is limited and offer escalation."
+            )
+            user_prompt = f"Approved Internal Knowledge:\n{context}\n\nProspect Question: {body.query}"
+
+            answer = await llm.complete(
+                [LLMMessage(role="system", content=system_prompt), LLMMessage(role="user", content=user_prompt)],
+                temperature=0.3,
+            )
+            return {
+                "query": body.query,
+                "answer": answer,
+                "confidence": 0.95,
+                "escalated": False,
+                "sources": sources_payload,
+            }
+        except Exception as e:
+            logger.warning(f"LLM synthesis completion failed ({e}), falling back to direct context extraction")
+
+    # Direct context fallback when LLM API key is unconfigured
+    fallback_answer = f"Based on RayvenSC internal documentation:\n\n" + "\n\n".join([f"• {r.content} {r.citation}" for r in results[:2]])
 
     return {
         "query": body.query,
-        "answer": answer,
-        "confidence": 0.95,
+        "answer": fallback_answer,
+        "confidence": 0.85,
         "escalated": False,
-        "sources": [
-            {
-                "title": r.title,
-                "source_url": r.source_url,
-                "citation": r.citation,
-            }
-            for r in results
-        ],
+        "sources": sources_payload,
     }
 
 

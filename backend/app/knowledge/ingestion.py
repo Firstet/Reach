@@ -116,63 +116,75 @@ async def ingest_knowledge_base(
 
 async def search_knowledge_base(
     db: AsyncSession,
-    llm_provider: LLMProvider,
+    llm_provider: LLMProvider | None,
     query: str,
     k: int = 5,
-    threshold: float = 0.70,
+    threshold: float = 0.60,
 ) -> list[dict]:
-    """Search the knowledge base using semantic similarity with database fallback."""
+    """Search the knowledge base using semantic similarity with keyword fallback."""
     from sqlalchemy import text, select
 
-    query_embedding = await llm_provider.embed(query)
-    embedding_str = str(query_embedding)
+    query_embedding = None
+    if llm_provider:
+        try:
+            query_embedding = await llm_provider.embed(query)
+        except Exception as e:
+            logger.warning(f"Embedding query failed ({e}), using keyword search fallback")
 
-    try:
-        result = await db.execute(
-            text("""
-                SELECT
-                    kc.content,
-                    kd.title,
-                    kd.doc_type,
-                    kd.source_url,
-                    1 - (kc.embedding <=> :query_vec::vector) AS similarity
-                FROM knowledge_chunks kc
-                JOIN knowledge_documents kd ON kd.id = kc.document_id
-                WHERE kd.is_active = true
-                  AND 1 - (kc.embedding <=> :query_vec::vector) >= :threshold
-                ORDER BY kc.embedding <=> :query_vec::vector
-                LIMIT :k
-            """),
-            {"query_vec": embedding_str, "threshold": threshold, "k": k},
-        )
-        return [
-            {
-                "content": row.content,
-                "title": row.title,
-                "doc_type": row.doc_type,
-                "source_url": row.source_url,
-                "similarity": float(row.similarity),
-            }
-            for row in result.fetchall()
-        ]
-    except Exception as e:
-        logger.warning(f"Vector search falling back to Python similarity scoring: {e}")
-        # Fallback: load chunks and calculate Python cosine similarity
-        res = await db.execute(
-            select(KnowledgeChunk, KnowledgeDocument)
-            .join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id)
-            .where(KnowledgeDocument.is_active == True)
-        )
-        matches = []
-        for chunk, doc in res.all():
-            sim = 0.85 if any(w.lower() in chunk.content.lower() for w in query.split()) else 0.50
-            if sim >= threshold:
-                matches.append({
-                    "content": chunk.content,
-                    "title": doc.title,
-                    "doc_type": doc.doc_type,
-                    "source_url": doc.source_url,
-                    "similarity": sim,
-                })
-        matches.sort(key=lambda x: x["similarity"], reverse=True)
-        return matches[:k]
+    if query_embedding:
+        embedding_str = str(query_embedding)
+        try:
+            result = await db.execute(
+                text("""
+                    SELECT
+                        kc.content,
+                        kd.title,
+                        kd.doc_type,
+                        kd.source_url,
+                        1 - (kc.embedding <=> :query_vec::vector) AS similarity
+                    FROM knowledge_chunks kc
+                    JOIN knowledge_documents kd ON kd.id = kc.document_id
+                    WHERE kd.is_active = true
+                      AND 1 - (kc.embedding <=> :query_vec::vector) >= :threshold
+                    ORDER BY kc.embedding <=> :query_vec::vector
+                    LIMIT :k
+                """),
+                {"query_vec": embedding_str, "threshold": threshold, "k": k},
+            )
+            rows = result.fetchall()
+            if rows:
+                return [
+                    {
+                        "content": row.content,
+                        "title": row.title,
+                        "doc_type": row.doc_type,
+                        "source_url": row.source_url,
+                        "similarity": float(row.similarity),
+                    }
+                    for row in rows
+                ]
+        except Exception as e:
+            logger.warning(f"Vector search falling back to Python keyword matching: {e}")
+
+    # Fallback: keyword matching against ingested documents
+    res = await db.execute(
+        select(KnowledgeChunk, KnowledgeDocument)
+        .join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id)
+        .where(KnowledgeDocument.is_active == True)
+    )
+    matches = []
+    query_words = set(w.lower() for w in query.split() if len(w) > 2)
+    for chunk, doc in res.all():
+        chunk_text_lower = chunk.content.lower()
+        overlap = sum(1 for w in query_words if w in chunk_text_lower)
+        sim = 0.85 if overlap >= 2 else (0.70 if overlap == 1 else 0.40)
+        if sim >= 0.40:
+            matches.append({
+                "content": chunk.content,
+                "title": doc.title,
+                "doc_type": doc.doc_type,
+                "source_url": doc.source_url,
+                "similarity": sim,
+            })
+    matches.sort(key=lambda x: x["similarity"], reverse=True)
+    return matches[:k]
