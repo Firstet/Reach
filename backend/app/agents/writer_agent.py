@@ -50,6 +50,26 @@ async def run_writer_agent(
     if not lead or not lead.prospect:
         raise ValueError(f"Lead {lead_id} missing prospect")
 
+    # STRICT SEQUENCE FREEZE: Do not write drafts for stopped/replied leads
+    if lead.is_stopped or (lead.reply_count and lead.reply_count > 0) or lead.status in (
+        LeadStatus.REPLIED, LeadStatus.HUMAN_ENGAGED, LeadStatus.AUTO_RESPONDED,
+        LeadStatus.UNSUBSCRIBED, LeadStatus.NOT_INTERESTED, LeadStatus.CONVERTED
+    ):
+        logger.info(f"Writer Agent skipped: Lead {lead_id} is stopped or has replied (status: {lead.status}).")
+        return {"skipped": True, "reason": "Lead stopped or replied"}
+
+    # Prevent duplicate draft for the same step
+    existing_msg = await db.execute(
+        select(Message).where(
+            Message.lead_id == lead.id,
+            Message.direction == MessageDirection.OUTBOUND,
+            Message.status == MessageStatus.DRAFT,
+        )
+    )
+    if existing_msg.scalar_one_or_none():
+        logger.info(f"Writer Agent skipped: Draft already pending for lead {lead_id}.")
+        return {"skipped": True, "reason": "Draft already pending"}
+
     campaign = lead.campaign
     if not campaign:
         raise ValueError(f"Lead {lead_id} missing campaign")

@@ -74,6 +74,14 @@ async def run_sequence_agent_tick(db: AsyncSession) -> dict:
         leads = lead_res.scalars().all()
 
         for lead in leads:
+            # STRICT REPLY DETECTION & SEQUENCE FREEZE GUARD
+            if lead.is_stopped or (lead.reply_count and lead.reply_count > 0) or lead.status in (
+                LeadStatus.REPLIED, LeadStatus.HUMAN_ENGAGED, LeadStatus.AUTO_RESPONDED,
+                LeadStatus.UNSUBSCRIBED, LeadStatus.NOT_INTERESTED, LeadStatus.CONVERTED
+            ):
+                logger.info(f"Skipping sequence for lead {lead.id}: Lead has replied or is stopped (status: {lead.status}).")
+                continue
+
             # 1. Pipeline Advancement Pipeline
             try:
                 if lead.status in (LeadStatus.DISCOVERED, LeadStatus.NEW):
@@ -104,17 +112,29 @@ async def run_sequence_agent_tick(db: AsyncSession) -> dict:
                     )
                     if send_res.get("success"):
                         lead.current_step = max(lead.current_step, 1)
-                        lead.next_action_at = now_utc + timedelta(hours=campaign.follow_up_delay_hours)
+                        # Professional Spaced Follow-Up Schedule: Step 1 -> Wait 5 Days
+                        delay_days = 5
+                        if campaign.test_mode or lead.is_test:
+                            lead.next_action_at = now_utc + timedelta(minutes=5)
+                        else:
+                            lead.next_action_at = now_utc + timedelta(days=delay_days)
                         stats["messages_sent"] += 1
 
                 elif lead.status == LeadStatus.OUTREACH_SENT:
-                    # Check if due for follow-up
+                    # Check if due for professional spaced follow-up
                     if lead.next_action_at and now_utc >= lead.next_action_at:
                         if lead.current_step < (campaign.max_follow_ups + 1):
                             next_step = lead.current_step + 1
-                            logger.info(f"Generating follow-up #{next_step} for lead {lead.id}")
+                            logger.info(f"Generating professional follow-up #{next_step} for lead {lead.id}")
                             await run_writer_agent(db, lead.id, step_number=next_step)
                             lead.current_step = next_step
+                            
+                            # Calculate next spaced delay: Step 2 -> Wait 9 Days; Step 3 -> Wait 12 Days
+                            next_delay_days = 9 if next_step == 2 else 12
+                            if campaign.test_mode or lead.is_test:
+                                lead.next_action_at = now_utc + timedelta(minutes=next_delay_days)
+                            else:
+                                lead.next_action_at = now_utc + timedelta(days=next_delay_days)
                             stats["leads_advanced"] += 1
 
             except Exception as e:
