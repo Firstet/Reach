@@ -140,21 +140,22 @@ const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret
 };
 
 async function apiFetch(path: string, opts?: RequestInit) {
-  const token = localStorage.getItem("access_token");
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const targetUrl = path.startsWith("http") ? path : `${apiBase}${path}`;
-  
-  let res = await fetch(targetUrl, {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const url = path;
+
+  const res = await fetch(url, {
     ...opts,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...opts?.headers },
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "Content-Type": "application/json",
+      ...opts?.headers,
+    },
   });
-  if (!res.ok && !path.startsWith("http")) {
-    res = await fetch(path, {
-      ...opts,
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...opts?.headers },
-    });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "Request failed");
+    throw new Error(errorText);
   }
-  if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 

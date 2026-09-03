@@ -54,29 +54,22 @@ interface Lead {
 
 
 async function apiFetch(path: string, options?: RequestInit) {
-  const token = localStorage.getItem("access_token");
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const url = path.startsWith("http") ? path : `${apiBase}${path}`;
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const url = path;
 
-  let res = await fetch(url, {
+  const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: token ? `Bearer ${token}` : "",
       ...options?.headers,
     },
   });
-  if (!res.ok && !path.startsWith("http")) {
-    res = await fetch(path, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options?.headers,
-      },
-    });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "Request failed");
+    throw new Error(errorText);
   }
-  if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 

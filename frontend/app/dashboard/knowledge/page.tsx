@@ -47,20 +47,22 @@ const CATEGORY_COLORS: Record<string, { label: string; color: string }> = {
 };
 
 async function apiFetch(path: string, opts?: RequestInit) {
-  const token = localStorage.getItem("access_token");
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  let fullUrl = path.startsWith("http") ? path : `${apiBase}${path}`;
-  let res = await fetch(fullUrl, {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const url = path;
+
+  const res = await fetch(url, {
     ...opts,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...opts?.headers },
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "Content-Type": "application/json",
+      ...opts?.headers,
+    },
   });
-  if (!res.ok && !path.startsWith("http")) {
-    res = await fetch(path, {
-      ...opts,
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...opts?.headers },
-    });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "Request failed");
+    throw new Error(errorText);
   }
-  if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
@@ -152,13 +154,12 @@ export default function KnowledgePage() {
     e.preventDefault();
     if (!uploadFile) return;
     const token = localStorage.getItem("access_token");
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     const formData = new FormData();
     formData.append("file", uploadFile);
     formData.append("doc_category", uploadCat);
 
     try {
-      const res = await fetch(`${apiBase}/api/v1/knowledge/upload`, {
+      const res = await fetch("/api/v1/knowledge/upload", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

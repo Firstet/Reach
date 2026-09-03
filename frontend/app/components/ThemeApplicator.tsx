@@ -62,15 +62,22 @@ export function ThemeApplicator({ children }: { children: React.ReactNode }) {
       document.documentElement.style.fontSize = updated.font_size_scale;
     }
 
-    // 3. Favicon URL
+    // 3. Favicon & Document Title
+    if (updated.hero_title) {
+      document.title = `${updated.hero_title} — ${updated.hero_subtitle || "AI Business Development Agent"}`;
+    }
+
     if (updated.favicon_url) {
-      let iconLink = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-      if (!iconLink) {
-        iconLink = document.createElement("link");
-        iconLink.rel = "icon";
-        document.head.appendChild(iconLink);
-      }
-      iconLink.href = updated.favicon_url;
+      const rels = ["icon", "shortcut icon", "apple-touch-icon"];
+      rels.forEach((rel) => {
+        let iconLink = document.querySelector(`link[rel='${rel}']`) as HTMLLinkElement;
+        if (!iconLink) {
+          iconLink = document.createElement("link");
+          iconLink.rel = rel;
+          document.head.appendChild(iconLink);
+        }
+        iconLink.href = updated.favicon_url;
+      });
     }
   };
 
@@ -83,9 +90,8 @@ export function ThemeApplicator({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    // Fetch latest configuration from API
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    fetch(`${apiBase}/api/v1/config/public`)
+    // Fetch latest configuration from API via relative route proxied by Next.js
+    fetch("/api/v1/config/public")
       .then((res) => res.json())
       .then((data) => {
         const homeConfig = (data.providers || []).find(
