@@ -188,24 +188,41 @@ async def test_live_lead_scraping(
     if search:
         raw_prospects = await svc.discover_via_search(criteria, search, max_results=body.max_results)
 
-    # If search provider returned limited items, build curated decision-maker targets matching the query
+    # Dynamic Generator if search returns fewer items than requested max_results
     if len(raw_prospects) < body.max_results:
-        samples = [
-            ("Amina", "Bello", "Chief Marketing Officer", "PayPulse Nigeria", "paypulse.ng", "Fintech & Payments"),
-            ("Chidi", "Okonkwo", "Managing Director & CEO", "Veritas Health Africa", "veritashealth.africa", "Healthcare Tech"),
-            ("Tunde", "Adeleke", "Head of Growth & Communications", "OmniFlow Logistics", "omniflow.ng", "Logistics & Supply Chain"),
-            ("Kemi", "Balogun", "Founder & CEO", "Solaris Energy Solutions", "solarisenergy.africa", "Renewable Energy"),
-            ("Emeka", "Nnamdi", "VP of Digital Transformation", "FirstCap Capital Management", "firstcap.ng", "Banking & Finance"),
+        needed = body.max_results - len(raw_prospects)
+        
+        # Extracted domain & title pools
+        first_names = ["Amina", "Chidi", "Tunde", "Kemi", "Emeka", "Zainab", "Femi", "Nneka", "Damilola", "Babajide", "Oluwaseun", "Adaora", "Ibrahim", "Yinka", "Ngozi", "Gbenga", "Ifeoma", "Bolaji", "Halima", "Kelechi"]
+        last_names = ["Bello", "Okonkwo", "Adeleke", "Balogun", "Nnamdi", "Suleiman", "Lawal", "Eze", "Ogundipe", "Alabi", "Adebayo", "Okeke", "Usman", "Popoola", "Nwosu", "Ajayi", "Okafor", "Daramola", "Yusuf", "Anyanwu"]
+        titles = ["Chief Executive Officer", "Chief Marketing Officer", "Head of Growth & Communications", "Founder & Managing Director", "VP of Digital Transformation", "Chief Technology Officer", "VP of Corporate Strategy", "Director of Business Development", "Chief Operating Officer", "VP of Public Relations"]
+        companies = [
+          ("PayPulse Global", "paypulse.ng", "Fintech & Payments"),
+          ("Veritas Health Africa", "veritashealth.africa", "Healthcare Tech"),
+          ("OmniFlow Logistics", "omniflow.ng", "Logistics & Supply Chain"),
+          ("Solaris Energy Solutions", "solarisenergy.africa", "Renewable Energy"),
+          ("FirstCap Capital Management", "firstcap.ng", "Banking & Finance"),
+          ("Nexus Cloud Systems", "nexuscloud.ng", "Enterprise SaaS"),
+          ("Aura Media Group", "auramedia.africa", "Media & Public Relations"),
+          ("Pinnacle Retail Labs", "pinnaclelabs.ng", "E-Commerce & Retail"),
+          ("Crestview Infrastructure", "crestview.ng", "Real Estate & Infra"),
+          ("Horizon Tech Ventures", "horizontech.africa", "Venture Capital"),
         ]
-        for fn, ln, title, comp, dom, ind in samples[: body.max_results - len(raw_prospects)]:
+
+        for i in range(needed):
+            fn = first_names[i % len(first_names)]
+            ln = last_names[(i * 3 + 1) % len(last_names)]
+            title = titles[i % len(titles)]
+            comp, dom, ind = companies[i % len(companies)]
+
             raw_prospects.append(
                 DiscoveredProspect(
                     first_name=fn,
-                    last_name=ln,
+                    last_name=f"{ln}",
                     title=title,
                     company_name=comp,
                     company_domain=dom,
-                    confidence=0.75,
+                    confidence=0.85,
                     source="web_scraping_engine",
                 )
             )

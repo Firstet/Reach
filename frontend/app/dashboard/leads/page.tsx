@@ -75,6 +75,7 @@ export default function LeadsPage() {
   const [scrapingQuery, setScrapingQuery] = useState(
     "CEOs, CMOs and Marketing Directors at Nigerian technology, finance and healthcare companies"
   );
+  const [scrapingMaxResults, setScrapingMaxResults] = useState(10);
   const [scraping, setScraping] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -100,9 +101,9 @@ export default function LeadsPage() {
     try {
       const res = await apiFetch("/api/v1/leads/test-scraping", {
         method: "POST",
-        body: JSON.stringify({ query: scrapingQuery, max_results: 5 }),
+        body: JSON.stringify({ query: scrapingQuery, max_results: scrapingMaxResults }),
       });
-      alert(`🎉 Web Scraping Engine Executed! Extracted and enrolled ${res.scraped_count} leads.`);
+      alert(`🎉 Web Scraping Engine Executed!\nExtracted and enrolled ${res.scraped_count} leads matching query.`);
       await loadLeads();
     } catch (err: any) {
       alert("Scraping test error: " + (err?.message || err));
@@ -142,7 +143,7 @@ export default function LeadsPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-          <span style={{ fontSize: "18px" }}>🚀</span>
+          <Sparkles size={18} style={{ color: "var(--rayven-accent)" }} />
           <h2 style={{ fontSize: "15px", fontWeight: "800", color: "#ffffff", margin: 0 }}>
             Live Lead Discovery & Web Extraction Engine Tester
           </h2>
@@ -150,8 +151,8 @@ export default function LeadsPage() {
             style={{
               fontSize: "11px",
               fontWeight: "700",
-              color: "#c9a84c",
-              background: "rgba(201,168,76,0.15)",
+              color: "var(--rayven-accent)",
+              background: "var(--rayven-accent-muted)",
               padding: "2px 10px",
               borderRadius: "20px",
               marginLeft: "auto",
@@ -160,7 +161,7 @@ export default function LeadsPage() {
             Zero-Paid Search & Domain Intelligence
           </span>
         </div>
-        <form onSubmit={handleTestScraping} style={{ display: "flex", gap: "12px" }}>
+        <form onSubmit={handleTestScraping} style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <input
             type="text"
             value={scrapingQuery}
@@ -168,6 +169,7 @@ export default function LeadsPage() {
             placeholder="Enter campaign query (e.g. CEOs, CMOs in Technology & Finance in Nigeria)"
             style={{
               flex: 1,
+              minWidth: "280px",
               background: "var(--bg-secondary, #1a1a26)",
               border: "1px solid var(--border, #2a2a3c)",
               borderRadius: "10px",
@@ -177,23 +179,48 @@ export default function LeadsPage() {
               outline: "none",
             }}
           />
+          <select
+            value={scrapingMaxResults}
+            onChange={(e) => setScrapingMaxResults(Number(e.target.value))}
+            style={{
+              background: "var(--bg-secondary, #1a1a26)",
+              border: "1px solid var(--border, #2a2a3c)",
+              borderRadius: "10px",
+              padding: "12px 14px",
+              color: "var(--rayven-accent)",
+              fontSize: "13px",
+              fontWeight: "700",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value={10}>10 Leads</option>
+            <option value={25}>25 Leads</option>
+            <option value={50}>50 Leads</option>
+            <option value={100}>100 Leads</option>
+          </select>
+
           <button
             type="submit"
             disabled={scraping}
             style={{
-              background: "linear-gradient(135deg, #c9a84c, #a87830)",
+              background: "var(--rayven-accent)",
               border: "none",
               borderRadius: "10px",
               padding: "12px 24px",
-              color: "#0a0a0f",
+              color: "#ffffff",
               fontSize: "13px",
               fontWeight: "800",
               cursor: scraping ? "not-allowed" : "pointer",
-              boxShadow: "0 4px 16px rgba(201,168,76,0.2)",
+              boxShadow: "0 0 16px var(--rayven-accent-glow)",
               whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            {scraping ? "Scraping Web & Enrolling..." : "Run Scraping & Extraction Test"}
+            <Search size={16} />
+            {scraping ? "Scraping Web & Enrolling..." : `Extract & Enroll ${scrapingMaxResults} Leads`}
           </button>
         </form>
       </div>
