@@ -41,8 +41,6 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./backend:/app
       - playwright_data:/root/.cache/ms-playwright
@@ -85,8 +83,6 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NEXT_PUBLIC_WS_URL: ws://localhost:8000
-    ports:
-      - "${FRONTEND_PORT:-3001}:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
