@@ -36,6 +36,20 @@ class LiveScrapeRequest(BaseModel):
     max_results: int = 5
 
 
+class LeadCreate(BaseModel):
+    prospect_id: uuid.UUID
+    campaign_id: uuid.UUID
+    notes: str | None = None
+
+
+class LeadUpdate(BaseModel):
+    status: LeadStatus | None = None
+    crm_stage: str | None = None
+    notes: str | None = None
+    is_stopped: bool | None = None
+    stopped_reason: str | None = None
+
+
 def _lead_dict(lead: Lead, include_prospect: bool = True, include_score: bool = True) -> dict:
     needs_human = lead.status in (LeadStatus.ESCALATED, LeadStatus.HUMAN_ENGAGED) or (lead.reply_count > 0 and lead.status not in (LeadStatus.NOT_INTERESTED, LeadStatus.CONVERTED))
     d: dict[str, Any] = {
