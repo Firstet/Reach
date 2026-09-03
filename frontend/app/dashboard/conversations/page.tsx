@@ -59,8 +59,10 @@ function ConversationsInner() {
   const searchParams = useSearchParams();
   const showEscalated = searchParams.get("escalated") === "true";
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [dailyLogs, setDailyLogs] = useState<any[]>([]);
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "escalated">(showEscalated ? "escalated" : "all");
+  const [filter, setFilter] = useState<"all" | "escalated" | "daily_logs">(showEscalated ? "escalated" : "all");
 
   // Selected Thread detail state
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
@@ -73,9 +75,18 @@ function ConversationsInner() {
   const load = async () => {
     setLoading(true);
     try {
-      const q = filter === "escalated" ? "?escalated_only=true" : "?page_size=50";
-      const data = await apiFetch(`/api/v1/conversations${q}`);
-      setConversations(data.items);
+      if (filter === "daily_logs") {
+        const logsData = await apiFetch("/api/v1/conversations/daily-outreach-logs");
+        setDailyLogs(logsData.dates || []);
+        // Auto expand first date
+        if (logsData.dates?.length > 0) {
+          setExpandedDates((prev) => ({ ...prev, [logsData.dates[0].date]: true }));
+        }
+      } else {
+        const q = filter === "escalated" ? "?escalated_only=true" : "?page_size=50";
+        const data = await apiFetch(`/api/v1/conversations${q}`);
+        setConversations(data.items || []);
+      }
     } catch {
       /* not connected */
     } finally {
@@ -84,6 +95,10 @@ function ConversationsInner() {
   };
 
   useEffect(() => { load(); }, [filter]);
+
+  const toggleDateAccordion = (dateKey: string) => {
+    setExpandedDates((prev) => ({ ...prev, [dateKey]: !prev[dateKey] }));
+  };
 
   const openThread = async (conv: Conversation) => {
     try {
@@ -166,24 +181,27 @@ function ConversationsInner() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          {(["all", "escalated"] as const).map((f) => (
+          {[
+            { id: "all", label: "All Threads" },
+            { id: "escalated", label: "🔴 Escalated / HOT" },
+            { id: "daily_logs", label: "📅 Daily Sent Outreach & Reply Logs" },
+          ].map((tab) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              key={tab.id}
+              onClick={() => setFilter(tab.id as any)}
               style={{
-                padding: "7px 16px",
+                padding: "8px 16px",
                 borderRadius: "8px",
-                border: "1px solid var(--border)",
-                background: filter === f ? "rgba(201,168,76,0.12)" : "transparent",
-                color: filter === f ? "var(--accent-gold)" : "var(--text-secondary)",
+                border: filter === tab.id ? "1px solid var(--accent-gold)" : "1px solid var(--border)",
+                background: filter === tab.id ? "rgba(201,168,76,0.15)" : "transparent",
+                color: filter === tab.id ? "var(--accent-gold)" : "var(--text-secondary)",
                 fontSize: "12px",
-                fontWeight: "600",
+                fontWeight: "700",
                 cursor: "pointer",
                 transition: "all 0.15s",
-                textTransform: "capitalize",
               }}
             >
-              {f === "escalated" ? "🔴 Escalated / HOT" : "All"}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -191,7 +209,155 @@ function ConversationsInner() {
 
       {loading ? (
         <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "48px" }}>
-          Loading conversations...
+          Loading outreach logs & conversations...
+        </div>
+      ) : filter === "daily_logs" ? (
+        /* Daily Outreach Logs View (Expandable/Collapsible Date Accordions) */
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {dailyLogs.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "64px 24px",
+                background: "var(--bg-card)",
+                border: "1px dashed var(--border)",
+                borderRadius: "12px",
+              }}
+            >
+              <div style={{ fontSize: "36px", marginBottom: "12px" }}>📅</div>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "8px" }}>
+                No daily outreach records found
+              </h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                Daily sent emails and prospect replies will be tracked here automatically.
+              </p>
+            </div>
+          ) : (
+            dailyLogs.map((group) => {
+              const isExpanded = !!expandedDates[group.date];
+              return (
+                <div
+                  key={group.date}
+                  style={{
+                    background: "linear-gradient(145deg, #12141f 0%, #0a0b12 100%)",
+                    border: "1px solid var(--border, #2a2a3c)",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  {/* Date Accordion Header Bar */}
+                  <div
+                    onClick={() => toggleDateAccordion(group.date)}
+                    style={{
+                      padding: "16px 22px",
+                      background: "rgba(255,255,255,0.03)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      borderBottom: isExpanded ? "1px solid var(--border)" : "none",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "18px" }}>📅</span>
+                      <div>
+                        <h3 style={{ fontSize: "15px", fontWeight: "800", color: "#ffffff", margin: 0 }}>
+                          {group.date_display}
+                        </h3>
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                          Total Activity: <strong>{group.total_sent} Sent Out</strong> · <strong>{group.total_replies} Replies Received</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span
+                        style={{
+                          background: "rgba(201,168,76,0.15)",
+                          color: "#c9a84c",
+                          padding: "4px 12px",
+                          borderRadius: "20px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                        }}
+                      >
+                        {group.messages.length} Messages
+                      </span>
+                      <span style={{ fontSize: "16px", color: "#94a3b8", fontWeight: "700" }}>
+                        {isExpanded ? "▲ Retract" : "▼ Expand"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Expanded List of Messages */}
+                  {isExpanded && (
+                    <div style={{ padding: "16px 22px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {group.messages.map((m: any) => {
+                        const isOutbound = m.direction === "outbound";
+                        const isReply = m.direction === "inbound";
+
+                        return (
+                          <div
+                            key={m.id}
+                            style={{
+                              background: isOutbound ? "rgba(201,168,76,0.06)" : "rgba(56,189,248,0.08)",
+                              border: `1px solid ${isOutbound ? "rgba(201,168,76,0.25)" : "rgba(56,189,248,0.3)"}`,
+                              borderRadius: "12px",
+                              padding: "16px",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                              <div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                  <span
+                                    style={{
+                                      background: isOutbound ? "rgba(201,168,76,0.2)" : "rgba(56,189,248,0.2)",
+                                      color: isOutbound ? "#c9a84c" : "#38bdf8",
+                                      padding: "2px 10px",
+                                      borderRadius: "12px",
+                                      fontSize: "10px",
+                                      fontWeight: "800",
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    {isOutbound ? "📤 SENT OUTREACH" : "📥 PROSPECT REPLY"}
+                                  </span>
+                                  <span style={{ fontSize: "13px", fontWeight: "800", color: "#ffffff" }}>
+                                    {m.prospect_name}
+                                  </span>
+                                  <span style={{ fontSize: "11px", color: "var(--accent-gold)", fontWeight: "600" }}>
+                                    ({m.prospect_title || "Executive"})
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                                  Company: {m.company_name} · Recipient: {m.to_email || "prospect@enterprise.com"}
+                                </div>
+                              </div>
+
+                              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                                {m.sent_at ? new Date(m.sent_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                              </span>
+                            </div>
+
+                            {/* Subject & Body */}
+                            <div style={{ background: "rgba(0,0,0,0.3)", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px", marginTop: "8px" }}>
+                              <div style={{ fontSize: "12px", fontWeight: "800", color: "#ffffff", marginBottom: "4px" }}>
+                                Subject: {m.subject}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#e2e8f0", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
+                                {m.body}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       ) : conversations.length === 0 ? (
         <div

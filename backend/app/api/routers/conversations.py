@@ -69,6 +69,69 @@ def _message_dict(m: Message) -> dict:
     }
 
 
+@router.get("/daily-outreach-logs")
+async def get_daily_outreach_logs(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Fetch sent outreach and replies grouped by calendar date into expandable daily accordions.
+    """
+    from app.models import Company, Prospect
+    stmt = (
+        select(Message)
+        .options(
+            selectinload(Message.lead).selectinload(Lead.prospect).selectinload(Prospect.company)
+        )
+        .order_by(Message.created_at.desc())
+    )
+    res = await db.execute(stmt)
+    all_messages = res.scalars().all()
+
+    grouped = {}
+    for m in all_messages:
+        created_dt = m.sent_at or m.created_at
+        date_str = created_dt.strftime("%Y-%m-%d") if created_dt else "2026-09-03"
+        date_display = created_dt.strftime("%A, %b %d, %Y") if created_dt else "Thursday, Sep 03, 2026"
+
+        if date_str not in grouped:
+            grouped[date_str] = {
+                "date": date_str,
+                "date_display": date_display,
+                "total_sent": 0,
+                "total_replies": 0,
+                "messages": [],
+            }
+
+        lead = m.lead
+        prospect = lead.prospect if lead else None
+        company = prospect.company if prospect else None
+
+        if m.direction == MessageDirection.OUTBOUND:
+            grouped[date_str]["total_sent"] += 1
+        elif m.direction == MessageDirection.INBOUND:
+            grouped[date_str]["total_replies"] += 1
+
+        grouped[date_str]["messages"].append({
+            "id": str(m.id),
+            "direction": m.direction,
+            "status": m.status,
+            "subject": m.subject or "Strategic Outreach",
+            "body": m.body,
+            "from_email": m.from_email,
+            "to_email": m.to_email or (prospect.email if prospect else None),
+            "sent_at": created_dt.isoformat() if created_dt else None,
+            "is_auto_generated": m.is_auto_generated,
+            "prospect_id": str(prospect.id) if prospect else None,
+            "prospect_name": prospect.full_name if prospect else "Executive Prospect",
+            "prospect_title": prospect.title if prospect else "Decision Maker",
+            "company_name": company.name if company else "Target Organization",
+        })
+
+    sorted_dates = sorted(grouped.values(), key=lambda x: x["date"], reverse=True)
+    return {"dates": sorted_dates}
+
+
 @router.get("")
 async def list_conversations(
     page: int = Query(1, ge=1),

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.knowledge.ingestion import search_knowledge_base
-from app.models import Campaign, Lead, Prospect, ProspectResearch
+from app.models import Campaign, EmailTemplate, Lead, Prospect, ProspectResearch
 from app.providers.base import LLMMessage, LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,15 @@ class PersonalizationService:
         campaign = lead.campaign
         research = await self._get_prospect_research(lead.id)
 
-        # 1. Fetch relevant RAG chunks from RayvenSC Knowledge Base
+        # 1. Auto-select strategic EmailTemplate framework based on prospect designation & signals
+        selected_template = await self._auto_select_template(prospect, research, step_number)
+        template_name = selected_template.name if selected_template else "Strategic Observation"
+        template_purpose = selected_template.purpose if selected_template else "Start a conversation by identifying a meaningful observation."
+        template_subject = selected_template.subject_template if selected_template else "A thought on {{company}}'s positioning"
+        template_body_structure = selected_template.body_template if selected_template else "Hi {{first_name}}, ..."
+        template_rules = selected_template.rules if selected_template else "Keep concise, peer-level consultative tone."
+
+        # 2. Fetch relevant RAG chunks from RayvenSC Knowledge Base
         kb_query = f"{company.industry or ''} {campaign.value_proposition or ''} {research.potential_challenge if research else ''}"
         kb_chunks = []
         if llm:
@@ -64,23 +72,26 @@ class PersonalizationService:
             "Framework: Context Intelligence -> Narrative Architecture -> Strategic Deployment -> Outcome Measurement."
         )
 
-        # 2. Build prompt with strict brand rules
+        # 3. Build prompt enforcing selected strategic framework and brand rules
         system_prompt = (
             "You are a Senior Strategic Director at Rayven Strategic Communications (RayvenSC).\n"
-            "Your task is to write a high-converting, deeply strategic cold email to an executive.\n\n"
-            "CRITICAL WRITING RULES:\n"
+            f"Your task is to write a high-converting, deeply strategic cold email using the selected framework: '{template_name}'.\n\n"
+            f"STRATEGIC FRAMEWORK PURPOSE:\n{template_purpose}\n\n"
+            f"FRAMEWORK SUBJECT PATTERN:\n{template_subject}\n\n"
+            f"FRAMEWORK BODY STRUCTURE:\n{template_body_structure}\n\n"
+            f"CRITICAL FRAMEWORK RULES:\n{template_rules}\n\n"
+            "GENERAL WRITING RULES:\n"
             "1. NO fake familiarity or generic pleasantries (DO NOT write 'Hope this finds you well', 'I came across your profile', 'I hope you're having a great week').\n"
             "2. NO invented facts or unverified assumptions. Use ONLY the empirical evidence provided.\n"
-            "3. NO manipulative false urgency or pressure tactics.\n"
-            "4. NO excessive length — Keep the email under 150 words.\n"
-            "5. Communicate like a peer strategic consultant — authoritative, precise, respectful of their time.\n"
-            "6. Demonstrate clear understanding of their business context before introducing RayvenSC's framework.\n"
-            "7. CTA must be a low-friction invitation to explore (e.g. 'Open to a brief exchange on how this applies to your Q3 priorities?').\n"
+            "3. Keep the email concise and authoritative (under 130 words).\n"
+            "4. Communicate like a peer strategic consultant — authoritative, precise, respectful of executive time.\n"
+            "5. CTA must be a low-friction invitation to explore.\n"
         )
 
         if step_number == 1:
             user_prompt = f"""
-Prospect: {prospect.full_name} ({prospect.title or 'Executive'})
+Prospect: {prospect.full_name}
+Designation/Title: {prospect.title or 'Executive'}
 Company: {company.name if company else 'their organisation'} ({company.industry if company else 'their sector'})
 Location: {prospect.location or company.country if company else 'Africa'}
 
@@ -90,18 +101,17 @@ Empirical Business Research:
 - Key Opportunity/Challenge: {research.potential_challenge if research else 'Differentiating narrative in a crowded market'}
 - Why Rayven Relevant: {research.why_rayven_relevant if research else 'Building narrative architecture that turns positioning into trust'}
 
-Campaign Strategy:
-- Value Proposition: {campaign.value_proposition if campaign else 'Closing the gap between what organisations say and what the world understands'}
-- Personalization Notes: {campaign.personalization_notes if campaign else 'Focus on strategic clarity and narrative architecture'}
+Selected Framework: {template_name}
+Framework Target Designation: {selected_template.recommended_lead_types if selected_template else 'Executive'}
 
 RayvenSC Knowledge Base Context:
 {kb_context_text}
 
-Generate an initial outreach email. Output JSON only with keys:
-- subject: concise, compelling subject line (under 8 words)
+Rewrite and generate the outreach email following the '{template_name}' framework. Output JSON only with keys:
+- subject: concise, compelling subject line following the framework pattern
 - body_text: plain text email body (salutation, body paragraphs, sign-off as Rayven Strategic Communications)
 - body_html: clean HTML paragraphs (<p> tags) matching body_text
-- reasoning: 1-sentence rationale explaining the strategic hook used
+- reasoning: 1-sentence rationale explaining why the '{template_name}' framework was auto-selected for this prospect's designation ({prospect.title or 'Executive'})
 """
         else: # Follow-up email
             user_prompt = f"""
@@ -161,6 +171,47 @@ Generate JSON with keys: subject, body_text, body_html, reasoning.
                 body_html=f"<p>{body.replace(chr(10), '<br>')}</p>",
                 reasoning="Fallback heuristic template due to error.",
             )
+
+    async def _auto_select_template(
+        self, prospect: Prospect, research: ProspectResearch | None, step_number: int
+    ) -> EmailTemplate | None:
+        """Automatically match the best strategic EmailTemplate framework based on prospect designation & research signals."""
+        role = (prospect.title or "").lower()
+        sig = (research.communication_signals or "").lower() if research else ""
+
+        slug = "strategic_observation"
+        if step_number == 2:
+            slug = "followup_new_insight"
+        elif step_number == 3:
+            slug = "followup_strategic_idea"
+        elif step_number == 4:
+            slug = "followup_value_offer"
+        elif step_number >= 5:
+            slug = "breakup_close_loop"
+        else:
+            # Designation & Signal matching
+            if any(w in role for w in ["founder", "ceo", "managing director", "speaker", "author"]):
+                slug = "personal_brand"
+            elif any(w in role for w in ["cmo", "marketing director", "head of brand", "vp marketing"]):
+                slug = "brand_positioning" if "positioning" in sig else "digital_growth"
+            elif any(w in role for w in ["sustainability", "csr", "impact", "esg"]):
+                slug = "social_impact_csr"
+            elif any(w in role for w in ["product", "cpo", "head of product"]):
+                slug = "product_service_launch"
+            elif any(w in role for w in ["growth", "expansion", "international", "territory"]):
+                slug = "growth_expansion"
+            elif any(w in role for w in ["strategy", "cso", "business development"]):
+                slug = "market_intelligence"
+            elif any(w in role for w in ["board", "chairman", "executive"]):
+                slug = "executive_communication"
+
+        stmt = select(EmailTemplate).where(EmailTemplate.slug == slug)
+        res = await self._db.execute(stmt)
+        matched = res.scalar_one_or_none()
+        if not matched:
+            res_fallback = await self._db.execute(select(EmailTemplate).where(EmailTemplate.is_active == True))
+            matched = res_fallback.scalars().first()
+        return matched
 
     async def _get_prospect_research(self, lead_id: uuid.UUID) -> ProspectResearch | None:
         stmt = select(ProspectResearch).where(ProspectResearch.lead_id == lead_id)
