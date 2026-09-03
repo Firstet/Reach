@@ -181,20 +181,42 @@ export default function RavenLandingPage() {
         {/* Brand Title / Wordmark */}
         <h1
           style={{
-            fontSize: "clamp(36px, 5.5vw, 64px)",
+            fontSize: "clamp(38px, 6vw, 64px)",
             fontWeight: "900",
-            letterSpacing: "0.14em",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
             margin: 0,
-            lineHeight: 1.1,
+            lineHeight: 1,
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
             alignItems: "center",
-            gap: "12px",
+            gap: "16px",
           }}
         >
-          <span style={{ color: "#ffffff" }}>{customization?.hero_title || "RAVEN AI"}</span>
+          {(() => {
+            const titleText = customization?.hero_title || "RAVEN AI";
+            const parts = titleText.trim().split(" ");
+            if (parts.length > 1) {
+              const mainPart = parts.slice(0, -1).join(" ");
+              const highlightPart = parts[parts.length - 1];
+              return (
+                <>
+                  <span style={{ color: "#ffffff" }}>{mainPart}</span>
+                  <span
+                    style={{
+                      background: "linear-gradient(135deg, #fbb03b 0%, #f7941d 55%, #d36f0a 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {highlightPart}
+                  </span>
+                </>
+              );
+            }
+            return <span style={{ color: "#ffffff" }}>{titleText}</span>;
+          })()}
         </h1>
 
         {/* Subtitle */}
