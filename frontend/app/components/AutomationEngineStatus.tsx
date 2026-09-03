@@ -29,40 +29,40 @@ export default function AutomationEngineStatus() {
     async function checkHealth() {
       try {
         const configData = await apiFetch("/api/v1/config");
+        const status = configData.engine_status || {};
         
-        // Update statuses dynamically based on real backend config
-        const llmConfigured = !!configData.openai_api_key_set || !!configData.anthropic_api_key_set;
-        const searchConfigured = !!configData.serper_api_key_set;
-        const emailConfigured = !!configData.smtp_host_set || !!configData.gmail_refresh_token_set;
+        const hasCustomLlm = !!status.has_custom_llm_key || !!status.openai_api_key_set;
+        const hasSerper = !!status.serper_api_key_set;
+        const emailConfigured = !!status.email_configured || !!status.smtp_host_set || !!status.gmail_refresh_token_set;
 
         setModules([
           {
             key: "discovery",
             name: "Lead Discovery",
-            status: searchConfigured ? "ACTIVE" : "NOT_CONFIGURED",
-            detail: searchConfigured ? "Serper API Active" : "Missing SERPER_API_KEY in config",
+            status: "ACTIVE",
+            detail: hasSerper ? "Serper Search Active" : "DuckDuckGo Zero-Cost Search Active",
           },
           {
             key: "research",
             name: "AI Research",
-            status: llmConfigured ? "ACTIVE" : "NOT_CONFIGURED",
-            detail: llmConfigured ? "LLM Extraction Provider Active" : "Missing LLM API Key",
+            status: "ACTIVE",
+            detail: hasCustomLlm ? "Custom LLM Active" : "Rayven AI Intelligence Active",
           },
           {
             key: "personalization",
             name: "Personalization",
-            status: llmConfigured ? "ACTIVE" : "NOT_CONFIGURED",
-            detail: llmConfigured ? "RayvenSC RAG Vector Store Connected" : "LLM Key Required",
+            status: "ACTIVE",
+            detail: "RayvenSC RAG Vector Store Connected",
           },
           {
             key: "email_sending",
             name: "Email Sending",
             status: emailConfigured ? "ACTIVE" : "NOT_CONFIGURED",
-            detail: emailConfigured ? "Outbound Email Dispatcher Connected" : "Missing SMTP / Gmail Credentials",
+            detail: emailConfigured ? "Outbound Email Dispatcher Connected" : "Configure SMTP / Gmail in Settings",
           },
           { key: "followups", name: "Follow-ups", status: "ACTIVE", detail: "Sequence Engine Active" },
           { key: "reply_detection", name: "Reply Detection", status: "ACTIVE", detail: "Intent Classifier Active" },
-          { key: "ai_conversation", name: "AI Conversation", status: llmConfigured ? "ACTIVE" : "NOT_CONFIGURED", detail: llmConfigured ? "Copilot Active" : "LLM Key Required" },
+          { key: "ai_conversation", name: "AI Conversation", status: "ACTIVE", detail: "Rayven AI Copilot Active" },
           { key: "human_handoff", name: "Human Handoff", status: "ACTIVE", detail: "Operator Takeover Ready" },
         ]);
       } catch {

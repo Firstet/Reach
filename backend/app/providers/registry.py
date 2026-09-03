@@ -46,14 +46,18 @@ def get_llm_provider():
 
 
 def get_search_provider():
-    """Return the configured search provider instance."""
+    """Return the configured search provider instance (with zero-cost DuckDuckGo fallback)."""
     settings = get_settings()
     name = settings.active_search_provider
-    if name == "serper":
+    if name == "serper" and settings.serper_api_key:
         from app.providers.search.serper_provider import SerperProvider
         return SerperProvider(api_key=settings.serper_api_key)
+    elif name == "serpapi" and settings.serpapi_api_key:
+        from app.providers.search.serper_provider import SerperProvider
+        return SerperProvider(api_key=settings.serpapi_api_key)
     else:
-        return None
+        from app.providers.search.duckduckgo_provider import DuckDuckGoProvider
+        return DuckDuckGoProvider()
 
 
 def get_enrichment_provider():

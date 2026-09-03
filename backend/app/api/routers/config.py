@@ -85,7 +85,68 @@ async def get_config(
             "updated_at": c.updated_at.isoformat(),
         })
 
-    return {"providers": providers}
+    settings = get_settings()
+
+    # Sync runtime settings with active ProviderConfig rows from DB
+    for c in configs:
+        if c.is_active:
+            secrets = {}
+            if c.encrypted_secrets:
+                try:
+                    secrets = json.loads(decrypt_secret(c.encrypted_secrets))
+                except Exception:
+                    secrets = {}
+            cfg = c.config_data or {}
+
+            if c.provider_type == "llm":
+                settings.active_llm_provider = c.provider_name
+                if secrets.get("api_key"):
+                    if c.provider_name == "openai":
+                        settings.openai_api_key = secrets["api_key"]
+                    elif c.provider_name == "openai_compatible":
+                        settings.openai_compatible_api_key = secrets["api_key"]
+                    elif c.provider_name == "anthropic":
+                        settings.anthropic_api_key = secrets["api_key"]
+                    elif c.provider_name == "gemini":
+                        settings.gemini_api_key = secrets["api_key"]
+            elif c.provider_type == "search":
+                if secrets.get("api_key"):
+                    settings.serper_api_key = secrets["api_key"]
+            elif c.provider_type == "email":
+                if cfg.get("smtp_host"):
+                    settings.smtp_host = cfg["smtp_host"]
+                if cfg.get("smtp_username"):
+                    settings.smtp_username = cfg["smtp_username"]
+                if secrets.get("smtp_password"):
+                    settings.smtp_password = secrets["smtp_password"]
+
+    has_custom_llm_key = bool(
+        settings.openai_api_key
+        or settings.anthropic_api_key
+        or settings.gemini_api_key
+        or settings.openai_compatible_api_key
+    )
+    email_configured = bool(
+        (settings.smtp_host and settings.smtp_username)
+        or settings.gmail_refresh_token
+        or settings.outlook_client_id
+    )
+
+    engine_status = {
+        "llm_configured": True,  # Standby / Local LLM provider is always ready
+        "has_custom_llm_key": has_custom_llm_key,
+        "search_configured": True,  # DuckDuckGo zero-cost fallback active
+        "serper_api_key_set": bool(settings.serper_api_key),
+        "email_configured": email_configured,
+        "openai_api_key_set": has_custom_llm_key,
+        "smtp_host_set": bool(settings.smtp_host and settings.smtp_username),
+        "gmail_refresh_token_set": bool(settings.gmail_refresh_token),
+        "active_llm_provider": settings.active_llm_provider,
+        "active_search_provider": settings.active_search_provider if settings.serper_api_key else "duckduckgo (Zero-Cost)",
+        "active_email_provider": settings.active_email_provider if email_configured else "standby",
+    }
+
+    return {"providers": providers, "engine_status": engine_status}
 
 
 @router.put("")
