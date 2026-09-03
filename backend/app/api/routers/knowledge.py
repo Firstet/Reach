@@ -251,7 +251,9 @@ async def query_knowledge_base(
     query_lower = body.query.lower()
 
     # STRICT ANTI-HALLUCINATION CHECK FOR PRICING
-    if any(w in query_lower for w in ["cost", "price", "charge", "fee", "rate"]):
+    query_words = set(query_lower.split())
+    pricing_keywords = {"cost", "costs", "price", "prices", "pricing", "charge", "fee", "fees", "rate", "rates"}
+    if query_words.intersection(pricing_keywords):
         pricing_rules = await agent.get_all_rules_of_category("pricing_rule")
         if not pricing_rules:
             return {
