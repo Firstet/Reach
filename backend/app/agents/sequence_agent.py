@@ -76,27 +76,27 @@ async def run_sequence_agent_tick(db: AsyncSession) -> dict:
         for lead in leads:
             # 1. Pipeline Advancement Pipeline
             try:
-                if lead.status == LeadStatus.DISCOVERED:
+                if lead.status in (LeadStatus.DISCOVERED, LeadStatus.NEW):
                     # Run Research Agent
                     await run_research_agent(db, lead.id)
                     stats["leads_advanced"] += 1
 
-                elif lead.status == LeadStatus.RESEARCHED:
+                if lead.status == LeadStatus.RESEARCHED:
                     # Run Enrichment Agent
                     await run_enrichment_agent(db, lead.id)
                     stats["leads_advanced"] += 1
 
-                elif lead.status == LeadStatus.ENRICHED:
+                if lead.status == LeadStatus.ENRICHED:
                     # Run Scoring Agent
                     await run_scoring_agent(db, lead.id)
                     stats["leads_advanced"] += 1
 
-                elif lead.status == LeadStatus.QUALIFIED and lead.current_step == 0:
+                if lead.status == LeadStatus.QUALIFIED and lead.current_step == 0:
                     # Run Writer Agent for Step 1 Initial Outreach
                     await run_writer_agent(db, lead.id, step_number=1)
                     stats["leads_advanced"] += 1
 
-                elif lead.status == LeadStatus.OUTREACH_PENDING:
+                if lead.status == LeadStatus.OUTREACH_PENDING:
                     # Execute Send
                     send_res = await outreach_service.send_lead_message(
                         lead_id=lead.id,

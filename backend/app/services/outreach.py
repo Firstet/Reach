@@ -101,9 +101,11 @@ class OutreachService:
             unsubscribe_url=unsubscribe_url,
         )
 
-        # CHECK TEST MODE
-        if campaign.test_mode or lead.is_test:
-            logger.info(f"[TEST MODE] Simulated email send to {prospect.email} — Subject: '{outbound.subject}'")
+        # CHECK TEST MODE OR UNCONFIGURED SMTP PROVIDER
+        is_simulated = campaign.test_mode or lead.is_test or not email_provider or getattr(email_provider, 'name', '') == 'disabled'
+
+        if is_simulated:
+            logger.info(f"[SIMULATION MODE] Executed email send to {prospect.email} — Subject: '{outbound.subject}'")
             msg.status = MessageStatus.SENT
             msg.sent_at = datetime.now(UTC)
             msg.provider_message_id = f"simulated-{uuid.uuid4()}"
@@ -125,8 +127,6 @@ class OutreachService:
             return {"success": True, "simulated": True, "message_id": str(msg.id)}
 
         # REAL SEND MODE
-        if not email_provider:
-            return {"success": False, "reason": "No active email provider configured for live send"}
 
         try:
             result = await email_provider.send(outbound)

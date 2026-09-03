@@ -112,7 +112,7 @@ class EnrichmentService:
             raise ValueError(f"Lead {lead_id} not found")
 
         if lead.prospect and lead.prospect.email:
-            if lead.status in (LeadStatus.NEW, LeadStatus.DISCOVERED):
+            if lead.status in (LeadStatus.NEW, LeadStatus.DISCOVERED, LeadStatus.RESEARCHED):
                 lead.status = LeadStatus.ENRICHED
 
         await self._db.commit()
