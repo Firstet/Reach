@@ -73,7 +73,7 @@ class IMAPProvider:
         return smtp_host or "imap.gmail.com"
 
     def fetch_messages_from_folder(
-        self, folder_name: str = "INBOX", since_hours: int = 48, max_count: int = 50
+        self, folder_name: str = "INBOX", since_hours: int | None = None, max_count: int = 500
     ) -> list[InboundMessage]:
         """Synchronously connect via IMAP and extract emails from specified folder."""
         if not self.username or not self.password or "mysecretpassword" in self.password:
@@ -84,11 +84,17 @@ class IMAPProvider:
         try:
             target_host = self._infer_imap_host(self.host)
             if self.use_ssl:
-                mail = imaplib.IMAP4_SSL(target_host, self.port, timeout=10)
+                mail = imaplib.IMAP4_SSL(target_host, self.port, timeout=15)
             else:
-                mail = imaplib.IMAP4(target_host, self.port, timeout=10)
+                mail = imaplib.IMAP4(target_host, self.port, timeout=15)
 
             mail.login(self.username, self.password)
+
+            # Try creating RAYVEN category folder on remote server if it doesn't exist
+            try:
+                mail.create('RAYVEN')
+            except Exception:
+                pass
 
             # Select folder
             status, _ = mail.select(f'"{folder_name}"', readonly=True)
@@ -98,11 +104,13 @@ class IMAPProvider:
                 if status != "OK":
                     return []
 
-            # Search recent messages
-            since_date = (datetime.now(UTC) - timedelta(hours=since_hours)).strftime("%d-%b-%Y")
-            status, search_data = mail.search(None, f'SINCE "{since_date}"')
-            if status != "OK" or not search_data[0]:
-                # Fallback to ALL if SINCE yields no results
+            # Search messages (SINCE if specified, else ALL for full historical sync)
+            if since_hours and since_hours > 0:
+                since_date = (datetime.now(UTC) - timedelta(hours=since_hours)).strftime("%d-%b-%Y")
+                status, search_data = mail.search(None, f'SINCE "{since_date}"')
+                if status != "OK" or not search_data[0]:
+                    status, search_data = mail.search(None, "ALL")
+            else:
                 status, search_data = mail.search(None, "ALL")
 
             if status == "OK" and search_data[0]:

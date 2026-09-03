@@ -86,7 +86,7 @@ function ConversationsInner() {
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [filter, setFilter] = useState<"inbox" | "sent" | "escalated" | "daily_logs">(
+  const [filter, setFilter] = useState<"inbox" | "rayven" | "sent" | "escalated" | "daily_logs">(
     showEscalated ? "escalated" : "inbox"
   );
   const [searchQuery, setSearchQuery] = useState("");
@@ -307,7 +307,8 @@ function ConversationsInner() {
       {/* Folder Navigation Tabs */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "24px", borderBottom: "1px solid var(--border)", paddingBottom: "16px", flexWrap: "wrap" }}>
         {[
-          { id: "inbox", label: "Inbox & Replies", icon: Inbox, count: inboundMessages.length },
+          { id: "inbox", label: "Inbox & All Historical Mails", icon: Inbox, count: inboundMessages.length },
+          { id: "rayven", label: "RAYVEN Category", icon: Sparkles, count: outboundMessages.length },
           { id: "sent", label: "Sent Dispatches", icon: Send, count: outboundMessages.length },
           { id: "escalated", label: "Hot Lead Escalations", icon: AlertTriangle, count: conversations.filter((c) => c.status === "escalated").length },
           { id: "daily_logs", label: "Daily Timeline View", icon: Calendar, count: dailyLogs.length },
@@ -435,6 +436,63 @@ function ConversationsInner() {
                   >
                     <Send size={12} /> Read & Reply Live
                   </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      ) : filter === "rayven" ? (
+        /* RAYVEN CATEGORY FOLDER VIEW */
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "12px", padding: "16px 20px", marginBottom: "8px" }}>
+            <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#c9a84c", marginBottom: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Sparkles size={16} /> RAYVEN AI App Category Folder
+            </h3>
+            <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>
+              All emails sent from or managed by RAYVEN AI are automatically categorized under this folder and tagged with standard X-Category & X-Mailer headers.
+            </p>
+          </div>
+
+          {filterBySearch(outboundMessages).length === 0 ? (
+            <div style={{ textAlign: "center", padding: "64px 24px", background: "var(--bg-card)", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+              <Sparkles size={40} style={{ color: "#c9a84c", marginBottom: "12px" }} />
+              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "8px" }}>No RAYVEN Category Mails Found</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                Emails sent by RAYVEN AI will appear here categorized under RAYVEN.
+              </p>
+            </div>
+          ) : (
+            filterBySearch(outboundMessages).map((m: MessageItem) => (
+              <div
+                key={m.id}
+                onClick={() => openMessageModal(m)}
+                style={{
+                  background: "linear-gradient(145deg, #18150c 0%, #0d0a06 100%)",
+                  border: "1px solid rgba(201,168,76,0.4)",
+                  borderRadius: "12px",
+                  padding: "18px 22px",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <span style={{ background: "rgba(201,168,76,0.25)", color: "#c9a84c", padding: "3px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "800" }}>
+                        🏷️ CATEGORY: RAYVEN AI
+                      </span>
+                      <span style={{ fontSize: "14px", fontWeight: "800", color: "#ffffff" }}>To: {m.prospect_name || m.to_email}</span>
+                      <span style={{ fontSize: "12px", color: "var(--accent-gold)" }}>{m.company_name ? `· ${m.company_name}` : ""}</span>
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" }}>Recipient: {m.to_email}</div>
+                  </div>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    {m.sent_at ? new Date(m.sent_at).toLocaleString() : "Recently Sent"}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#ffffff", marginBottom: "6px" }}>{m.subject}</div>
+                <div style={{ fontSize: "12px", color: "#cbd5e1", lineHeight: "1.5", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {m.body}
                 </div>
               </div>
             ))

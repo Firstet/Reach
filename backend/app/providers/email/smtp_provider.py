@@ -48,6 +48,9 @@ class SMTPProvider:
             from_header = f"{self.sender_name} <{self.sender_email}>" if self.sender_name else self.sender_email
             mime["From"] = from_header
             mime["To"] = message.to_email
+            mime["X-Mailer"] = "RAYVEN AI (RayvenSC)"
+            mime["X-Category"] = "RAYVEN"
+            mime["X-RAYVEN-OUTREACH"] = "true"
             
             if message.reply_to:
                 mime["Reply-To"] = message.reply_to

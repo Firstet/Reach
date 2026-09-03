@@ -78,16 +78,52 @@ class ConversationService:
         prospect = res.scalar_one_or_none()
 
         if not prospect:
-            logger.warning(f"Inbound reply from unknown email: {clean_email}")
-            return {"matched": False, "reason": "Prospect email not found"}
+            from app.models import Company
+            # Auto-create Prospect for historical email sync
+            company_name = clean_email.split("@")[-1].split(".")[0].capitalize()
+            comp_stmt = select(Company).where(Company.domain == clean_email.split("@")[-1])
+            comp_res = await self._db.execute(comp_stmt)
+            company = comp_res.scalar_one_or_none()
+            if not company:
+                company = Company(id=uuid.uuid4(), name=company_name, domain=clean_email.split("@")[-1])
+                self._db.add(company)
+                await self._db.flush()
 
-        # Find active lead
+            name_parts = clean_email.split("@")[0].replace(".", " ").replace("_", " ").title().split()
+            first_name = name_parts[0] if name_parts else "Executive"
+            last_name = name_parts[-1] if len(name_parts) > 1 else "Contact"
+
+            prospect = Prospect(
+                id=uuid.uuid4(),
+                company_id=company.id,
+                email=clean_email,
+                first_name=first_name,
+                last_name=last_name,
+                title="Executive Contact",
+            )
+            self._db.add(prospect)
+            await self._db.flush()
+
+        # Find or create active lead
         lead_stmt = select(Lead).where(Lead.prospect_id == prospect.id).order_by(Lead.updated_at.desc())
         lead_res = await self._db.execute(lead_stmt)
         lead = lead_res.scalar_one_or_none()
 
         if not lead:
-            return {"matched": False, "reason": "No active lead for prospect"}
+            from app.models import Campaign
+            camp_stmt = select(Campaign).limit(1)
+            camp_res = await self._db.execute(camp_stmt)
+            camp = camp_res.scalar_one_or_none()
+
+            lead = Lead(
+                id=uuid.uuid4(),
+                campaign_id=camp.id if camp else None,
+                prospect_id=prospect.id,
+                status=LeadStatus.DISCOVERED,
+                crm_stage=CRMStage.ENGAGED,
+            )
+            self._db.add(lead)
+            await self._db.flush()
 
         # 2. IMMEDIATELY STOP AUTOMATED OUTREACH SEQUENCE
         await self._outreach.stop_automated_sequence(lead.id, reason=f"Inbound reply received from {clean_email}")
