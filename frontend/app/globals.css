@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand palette — RayvenSC dark theme */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-card: #16161f;
+  --bg-hover: #1e1e2a;
+  --border: #2a2a38;
+  --border-subtle: #1e1e2a;
+
+  --accent-gold: #c9a84c;
+  --accent-gold-dim: rgba(201, 168, 76, 0.15);
+  --accent-blue: #4c7bc9;
+  --accent-blue-dim: rgba(76, 123, 201, 0.15);
+
+  --text-primary: #f0f0f5;
+  --text-secondary: #9090a8;
+  --text-muted: #5a5a72;
+
+  --status-new: #4c7bc9;
+  --status-enriched: #4caf50;
+  --status-outreach: #c9a84c;
+  --status-replied: #9c4cc9;
+  --status-escalated: #c94c4c;
+  --status-converted: #4cb89c;
+  --status-stopped: #5a5a72;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Glass card */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* Gold accent line */
+.gold-accent {
+  color: var(--accent-gold);
+}
+
+/* Status badge base */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
