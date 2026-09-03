@@ -146,3 +146,14 @@ async def reject_outreach_draft(
 
     await db.commit()
     return {"status": "rejected", "approval_id": str(approval_id)}
+
+
+@router.post("/trigger-tick")
+async def trigger_campaign_tick(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Manually trigger sequence orchestration tick across all active campaigns."""
+    from app.agents.sequence_agent import run_sequence_agent_tick
+    stats = await run_sequence_agent_tick(db)
+    return {"status": "executed", "stats": stats}

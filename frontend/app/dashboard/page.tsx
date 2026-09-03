@@ -123,10 +123,15 @@ const PIPELINE_STAGES = [
   { key: "converted", label: "Converted", color: "#10b981" },
 ];
 
-async function apiFetch(path: string) {
+async function apiFetch(path: string, options?: RequestInit) {
   const token = localStorage.getItem("access_token");
   const res = await fetch(path, {
-    headers: { Authorization: `Bearer ${token}` },
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...((options?.headers as Record<string, string>) || {}),
+    },
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
@@ -189,31 +194,61 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-          <div
-            style={{
-              width: "4px",
-              height: "26px",
-              background: "var(--rayven-accent)",
-              borderRadius: "2px",
-              boxShadow: "0 0 10px var(--rayven-accent-glow)",
-            }}
-          />
-          <h1
-            style={{
-              fontSize: "24px",
-              fontWeight: "900",
-              color: "#ffffff",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            RAYVEN AI — Business Development Operating System
-          </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
+            <div
+              style={{
+                width: "4px",
+                height: "26px",
+                background: "var(--rayven-accent)",
+                borderRadius: "2px",
+                boxShadow: "0 0 10px var(--rayven-accent-glow)",
+              }}
+            />
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: "900",
+                color: "#ffffff",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              RAYVEN AI — Business Development Operating System
+            </h1>
+          </div>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginLeft: "16px" }}>
+            Rayven Strategic Communications · Autonomous Enterprise Outreach & Personalization Platform
+          </p>
         </div>
-        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginLeft: "16px" }}>
-          Rayven Strategic Communications · Autonomous Enterprise Outreach & Personalization Platform
-        </p>
+
+        <button
+          onClick={async () => {
+            try {
+              const res = await apiFetch("/api/v1/outreach/trigger-tick", { method: "POST" });
+              alert(`⚡ Outreach Cycle Triggered!\nLeads Advanced: ${res.stats?.leads_advanced || 0}\nMessages Sent: ${res.stats?.messages_sent || 0}`);
+            } catch (e) {
+              alert("Failed to trigger cycle: " + e);
+            }
+          }}
+          style={{
+            background: "linear-gradient(135deg, var(--rayven-accent), #c87a0c)",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "10px",
+            padding: "10px 20px",
+            fontSize: "13px",
+            fontWeight: "800",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 0 16px var(--rayven-accent-glow)",
+          }}
+        >
+          <Send size={16} />
+          Trigger Automated Outreach Now
+        </button>
       </div>
 
       {/* Real-time Automation Engine Status Widget */}

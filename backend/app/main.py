@@ -21,9 +21,27 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+async def _background_automation_loop():
+    """Fail-safe background loop executing sequence orchestration & reply processing every 30 seconds."""
+    import asyncio
+    while True:
+        try:
+            await asyncio.sleep(30)
+            async with AsyncSessionLocal() as db:
+                from app.agents.sequence_agent import run_sequence_agent_tick
+                from app.agents.reply_agent import run_reply_agent
+                await run_sequence_agent_tick(db)
+                await run_reply_agent(db, since_hours=24)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Background automation loop error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle: startup → yield → shutdown."""
+    import asyncio
     logger.info("Starting Reach API...")
 
     # Always ensure database tables exist
@@ -41,8 +59,12 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await seed_email_templates(db)
 
+    # Start fail-safe background loop
+    loop_task = asyncio.create_task(_background_automation_loop())
+
     yield
 
+    loop_task.cancel()
     # Cleanup
     await engine.dispose()
     logger.info("Reach API shutdown complete.")
