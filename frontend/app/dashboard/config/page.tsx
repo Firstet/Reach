@@ -241,8 +241,11 @@ export default function ConfigPage() {
     const secrets: Record<string, string> = {};
     const config: Record<string, string> = { email_policy: emailPolicy };
 
-    fields.forEach(({ key, secret }) => {
-      const val = fieldValues[key] || "";
+    fields.forEach(({ key, secret, select, options }) => {
+      let val = fieldValues[key];
+      if (val === undefined || val === null) {
+        val = select && options ? options[0] : "";
+      }
       if (secret) {
         if (val && val !== "***") {
           secrets[key] = val;
@@ -263,6 +266,10 @@ export default function ConfigPage() {
           secrets,
         }),
       });
+      if (activeProvider === "home_customization") {
+        localStorage.setItem("reach_customization", JSON.stringify(config));
+        window.dispatchEvent(new CustomEvent("reach_customization_updated", { detail: config }));
+      }
       setSaved(true);
       await loadHealth();
       await loadConfigs();

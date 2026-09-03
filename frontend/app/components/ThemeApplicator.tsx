@@ -90,6 +90,13 @@ export function ThemeApplicator({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
+    const handleUpdate = (e: any) => {
+      if (e.detail) {
+        applyCustomization(e.detail);
+      }
+    };
+    window.addEventListener("reach_customization_updated", handleUpdate);
+
     // Fetch latest configuration from API via relative route proxied by Next.js
     fetch("/api/v1/config/public")
       .then((res) => res.json())
@@ -99,11 +106,16 @@ export function ThemeApplicator({ children }: { children: React.ReactNode }) {
         );
         if (homeConfig && homeConfig.config_data) {
           applyCustomization(homeConfig.config_data);
+          localStorage.setItem("reach_customization", JSON.stringify(homeConfig.config_data));
         }
       })
       .catch(() => {
         /* ignore fallback */
       });
+
+    return () => {
+      window.removeEventListener("reach_customization_updated", handleUpdate);
+    };
   }, []);
 
   return (
