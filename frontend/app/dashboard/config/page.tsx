@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 const PROVIDER_TYPES = [
   { type: "appearance", label: "Home Page & Theme", providers: ["home_customization"], icon: "🎨" },
@@ -138,26 +139,6 @@ const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret
     { key: "rate_limit_per_hour", label: "Rate Limit (per hour)", hint: "20" },
   ],
 };
-
-async function apiFetch(path: string, opts?: RequestInit) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  const url = path;
-
-  const res = await fetch(url, {
-    ...opts,
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-      ...opts?.headers,
-    },
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "Request failed");
-    throw new Error(errorText);
-  }
-  return res.json();
-}
 
 export default function ConfigPage() {
   const [health, setHealth] = useState<Record<string, any>>({});

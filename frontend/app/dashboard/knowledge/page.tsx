@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 interface DocumentItem {
   id: string;
@@ -45,26 +46,6 @@ const CATEGORY_COLORS: Record<string, { label: string; color: string }> = {
   case_study: { label: "Case Study / Work", color: "#27ae60" },
   pdf: { label: "Uploaded Document", color: "#2980b9" },
 };
-
-async function apiFetch(path: string, opts?: RequestInit) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  const url = path;
-
-  const res = await fetch(url, {
-    ...opts,
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-      ...opts?.headers,
-    },
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "Request failed");
-    throw new Error(errorText);
-  }
-  return res.json();
-}
 
 export default function KnowledgePage() {
   const [stats, setStats] = useState<KBStats | null>(null);

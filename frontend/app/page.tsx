@@ -19,6 +19,10 @@ export default function RavenLandingPage() {
     if (token) {
       setIsLoggedIn(true);
     }
+    if (typeof window !== "undefined" && window.location.search.includes("expired=1")) {
+      setError("Your session expired. Please sign in again.");
+      setShowLoginModal(true);
+    }
   }, []);
 
   const handleLoginClick = () => {

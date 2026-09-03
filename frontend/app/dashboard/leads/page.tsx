@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {
   new: { label: "New Lead", bg: "rgba(59,130,246,0.12)", color: "#60a5fa", border: "rgba(59,130,246,0.3)" },
@@ -52,26 +53,6 @@ interface Lead {
   created_at: string;
 }
 
-
-async function apiFetch(path: string, options?: RequestInit) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  const url = path;
-
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-      ...options?.headers,
-    },
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "Request failed");
-    throw new Error(errorText);
-  }
-  return res.json();
-}
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
