@@ -9,7 +9,7 @@ export default function RavenLandingPage() {
   const customization = useCustomization();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [email, setEmail] = useState("admin@rayvensc.com");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("admin123456");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
