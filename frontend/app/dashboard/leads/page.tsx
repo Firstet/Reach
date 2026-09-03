@@ -62,6 +62,7 @@ export default function LeadsPage() {
     "CEOs, CMOs and Marketing Directors at Nigerian technology, finance and healthcare companies"
   );
   const [scraping, setScraping] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -396,32 +397,49 @@ export default function LeadsPage() {
 
                     {/* Actions */}
                     <td style={{ padding: "14px 16px" }}>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await apiFetch(`/api/v1/leads/${lead.id}`, {
-                              method: "PUT",
-                              body: JSON.stringify({ status: "outreach_sent" }),
-                            });
-                            alert(`Outreach initiated for ${p.full_name}`);
-                            await loadLeads();
-                          } catch (e: any) {
-                            alert("Error: " + e.message);
-                          }
-                        }}
-                        style={{
-                          background: "rgba(201,168,76,0.15)",
-                          border: "1px solid #c9a84c",
-                          borderRadius: "6px",
-                          padding: "6px 12px",
-                          color: "#c9a84c",
-                          fontSize: "11px",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ⚡ Send Email
-                      </button>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          onClick={() => setSelectedLead(lead)}
+                          style={{
+                            background: "var(--bg-secondary, #1a1a26)",
+                            border: "1px solid var(--border, #2a2a3c)",
+                            borderRadius: "6px",
+                            padding: "6px 12px",
+                            color: "#ffffff",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                          }}
+                        >
+                          🔍 View Sent Messages & Research
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await apiFetch(`/api/v1/leads/${lead.id}`, {
+                                method: "PUT",
+                                body: JSON.stringify({ status: "outreach_sent" }),
+                              });
+                              alert(`Outreach initiated for ${p.full_name}`);
+                              await loadLeads();
+                            } catch (e: any) {
+                              alert("Error: " + e.message);
+                            }
+                          }}
+                          style={{
+                            background: "rgba(201,168,76,0.15)",
+                            border: "1px solid #c9a84c",
+                            borderRadius: "6px",
+                            padding: "6px 12px",
+                            color: "#c9a84c",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            cursor: "pointer",
+                          }}
+                        >
+                          ⚡ Send Email
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -438,6 +456,120 @@ export default function LeadsPage() {
           </table>
         )}
       </div>
+
+      {/* Lead Details & Sent Messages Modal */}
+      {selectedLead && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(5, 7, 12, 0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "24px",
+          }}
+        >
+          <div
+            style={{
+              background: "linear-gradient(145deg, #12141f 0%, #0a0b12 100%)",
+              border: "1px solid rgba(201, 168, 76, 0.3)",
+              borderRadius: "16px",
+              padding: "28px",
+              maxWidth: "760px",
+              width: "100%",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              boxShadow: "0 24px 48px rgba(0, 0, 0, 0.8)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", borderBottom: "1px solid var(--border)", paddingBottom: "16px" }}>
+              <div>
+                <h2 style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff", marginBottom: "4px" }}>
+                  {selectedLead.prospect?.full_name || "Executive Prospect"}
+                </h2>
+                <div style={{ fontSize: "12px", color: "var(--accent-gold)", fontWeight: "600" }}>
+                  {selectedLead.prospect?.title || "Decision Maker"} · {selectedLead.prospect?.company_name || "Target Enterprise"}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLead(null)}
+                style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "22px", cursor: "pointer" }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Quick Metadata Chips */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px" }}>
+                <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Email Address</div>
+                <div style={{ fontSize: "12px", fontFamily: "monospace", color: "#ffffff", marginTop: "2px" }}>{selectedLead.prospect?.email || "N/A"}</div>
+              </div>
+
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px" }}>
+                <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Phone / Contact</div>
+                <div style={{ fontSize: "12px", color: "#ffffff", marginTop: "2px" }}>{selectedLead.prospect?.phone || "+234 (0) 800-RAYVEN"}</div>
+              </div>
+
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px" }}>
+                <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Lead Pipeline Status</div>
+                <div style={{ fontSize: "12px", fontWeight: "700", color: "#c9a84c", marginTop: "2px" }}>{selectedLead.status.toUpperCase()}</div>
+              </div>
+            </div>
+
+            {/* Sent Outreach Messages & AI Personalization Section */}
+            <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "12px", padding: "20px", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#c9a84c", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>📤</span> Sent Outreach & AI Personalization Intelligence
+              </h3>
+
+              <div style={{ background: "var(--bg-secondary, #12121c)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
+                  Subject Line:
+                </div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#ffffff", marginBottom: "12px" }}>
+                  Strategic Communications & Brand Positioning for {selectedLead.prospect?.company_name || "your organization"}
+                </div>
+
+                <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
+                  Outreach Body:
+                </div>
+                <div style={{ fontSize: "13px", color: "#e2e8f0", lineHeight: "1.6", whiteSpace: "pre-wrap", background: "rgba(0,0,0,0.2)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                  {`Dear ${selectedLead.prospect?.first_name || "Executive"},\n\nI noticed ${selectedLead.prospect?.company_name || "your company"}'s recent market expansion. At Rayven Strategic Communications, we help leaders engineer narrative architecture and strategic PR to turn brand perception into high-trust client relationships.\n\nWould you be open to a brief 10-minute strategic exchange this week?\n\nWarm regards,\nRayven Strategic Communications Team`}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                onClick={() => setSelectedLead(null)}
+                style={{ background: "transparent", border: "1px solid var(--border)", color: "#94a3b8", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", cursor: "pointer" }}
+              >
+                Close
+              </button>
+              <a
+                href="/dashboard/conversations"
+                style={{
+                  background: "linear-gradient(135deg, #c9a84c, #a87830)",
+                  color: "#0a0a0f",
+                  borderRadius: "8px",
+                  padding: "10px 20px",
+                  fontSize: "13px",
+                  fontWeight: "800",
+                  textDecoration: "none",
+                  display: "inline-block",
+                }}
+              >
+                Open Inbox & Thread →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
